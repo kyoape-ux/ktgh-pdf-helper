@@ -41,7 +41,10 @@ main{max-width:1180px; margin:0 auto; padding:26px 28px 70px}
 .card{
   background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:20px;
   cursor:pointer; transition:.16s; text-align:left; font-family:inherit;
+  /* button 預設垂直置中,描述行數不同時圖示會高高低低 — 改成明確向上對齊 */
+  display:flex; flex-direction:column; align-items:flex-start; justify-content:flex-start;
 }
+.card p{margin:0}
 .card:hover{border-color:var(--tc,var(--accent2)); box-shadow:0 6px 20px rgba(15,95,122,.13); transform:translateY(-2px)}
 .card .ic{
   width:46px;height:46px;border-radius:12px;
@@ -649,7 +652,7 @@ function showHome(){
 document.querySelectorAll('.back').forEach(b=>b.addEventListener('click', showHome));
 $('brand').addEventListener('click', showHome);
 
-const VERSION = 'v1.8（2026-08-26）';
+const VERSION = 'v1.9（2026-08-26）';
 buildCards();
 $('foot').textContent = `光田 PDF 小幫手 ${VERSION} — 所有處理都在你的瀏覽器完成，檔案不會上傳到任何伺服器，關掉分頁就沒了`;
 
