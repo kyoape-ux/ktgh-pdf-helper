@@ -17,7 +17,9 @@
 body{
   font-family:"PingFang TC","Noto Sans TC","Microsoft JhengHei","Heiti TC",sans-serif;
   background:var(--bg); color:var(--ink); min-height:100vh; -webkit-font-smoothing:antialiased;
+  display:flex; flex-direction:column;
 }
+main{flex:1; width:100%}
 header{background:linear-gradient(135deg,#0d3b4f,#137a9c); color:#fff; padding:22px 28px}
 .hwrap{max-width:1180px; margin:0 auto; display:flex; align-items:center; gap:14px}
 #brand{
@@ -167,7 +169,11 @@ fieldset:disabled{opacity:.42}
   background:var(--accent); color:#fff; font-size:12px; display:flex;align-items:center;justify-content:center;
 }
 kbd{background:#eef1f5; border:1px solid var(--line); border-bottom-width:2px; border-radius:5px; padding:1px 6px; font-size:12.3px; font-family:inherit}
-footer{max-width:1180px; margin:0 auto; padding:0 28px 28px; font-size:11.5px; color:var(--ink3); line-height:1.8}
+footer{
+  margin-top:auto; width:100%; text-align:center;
+  padding:16px 28px 20px; font-size:11.5px; color:var(--ink3); line-height:1.8;
+  border-top:1px solid var(--line); background:#eef1f5;
+}
 </style>
 </head>
 <body>
@@ -628,11 +634,9 @@ function showHome(){
 document.querySelectorAll('.back').forEach(b=>b.addEventListener('click', showHome));
 $('brand').addEventListener('click', showHome);
 
-const VERSION = 'v1.4（2026-08-26）';
+const VERSION = 'v1.5（2026-08-26）';
 buildCards();
 $('foot').textContent = `光田 PDF 小幫手 ${VERSION} — 所有處理都在你的瀏覽器完成，檔案不會上傳到任何伺服器，關掉分頁就沒了`;
-document.querySelector('.badge').insertAdjacentHTML('afterend',
-  `<span class="badge" style="margin-left:8px">${VERSION}</span>`);
 
 /* ═══════════════ 合併與整理 ═══════════════ */
 (function(){
