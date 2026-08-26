@@ -628,8 +628,11 @@ function showHome(){
 document.querySelectorAll('.back').forEach(b=>b.addEventListener('click', showHome));
 $('brand').addEventListener('click', showHome);
 
+const VERSION = 'v1.4（2026-08-26）';
 buildCards();
-$('foot').textContent = '光田 PDF 小幫手 — 所有處理都在你的瀏覽器完成，檔案不會上傳到任何伺服器，關掉分頁就沒了';
+$('foot').textContent = `光田 PDF 小幫手 ${VERSION} — 所有處理都在你的瀏覽器完成，檔案不會上傳到任何伺服器，關掉分頁就沒了`;
+document.querySelector('.badge').insertAdjacentHTML('afterend',
+  `<span class="badge" style="margin-left:8px">${VERSION}</span>`);
 
 /* ═══════════════ 合併與整理 ═══════════════ */
 (function(){
@@ -837,6 +840,9 @@ $('foot').textContent = '光田 PDF 小幫手 — 所有處理都在你的瀏覽
 /* ═══════════════ 浮水印 ═══════════════ */
 (function(){
   let srcBytes=null, srcName='', pageCount=0, imgData=null, timer=null;
+  let fullDoc=null;                      // 解析一次就快取,抽預覽頁用(唯讀)
+  let baseCache={idx:-1, bytes:null};    // 抽出來的單頁 PDF,調滑桿時只重畫這一頁
+  let rendering=false, dirty=false;
   const S = {textOn:true, text:'光田綜合醫院', mode:'center', size:48, angle:45, op:15, color:'#888888',
              imgOn:false, pos:'mc', imgScale:30, imgOp:20, rangeMode:'all', range:''};
 
@@ -845,6 +851,7 @@ $('foot').textContent = '光田 PDF 小幫手 — 所有處理都在你的瀏覽
   async function loadBytes(name, bytes){
     srcBytes = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
     srcName = name;
+    fullDoc = null; baseCache = {idx:-1, bytes:null};
     const d = await pdfjsLib.getDocument({data:srcBytes.slice()}).promise;
     pageCount = d.numPages; d.destroy();
     $('wm-filename').textContent = name;
@@ -854,6 +861,17 @@ $('foot').textContent = '光田 PDF 小幫手 — 所有處理都在你的瀏覽
     $('wm-range').value = ''; S.range = '';
     $('wm-range-mode').querySelector('[data-v="all"]').click();
     schedule();
+  }
+  /* 預覽加速:整份文件只解析一次,把要預覽的那頁抽成單頁 PDF 快取,
+     之後每次調滑桿都只對這一頁蓋章重畫,大檔案才不會卡 */
+  async function getPreviewBase(idx){
+    if(baseCache.idx === idx && baseCache.bytes) return baseCache.bytes;
+    if(!fullDoc) fullDoc = await PDFDocument.load(srcBytes.slice(), {ignoreEncryption:true});
+    const one = await PDFDocument.create();
+    const [pg] = await one.copyPages(fullDoc, [idx]);
+    one.addPage(pg);
+    baseCache = {idx, bytes: await one.save()};
+    return baseCache.bytes;
   }
   TOOLBOX.watermark = loadBytes;
   async function load(files){
@@ -891,16 +909,19 @@ $('foot').textContent = '光田 PDF 小幫手 — 所有處理都在你的瀏覽
     }
     return true;
   }
-  const schedule = () => { clearTimeout(timer); timer = setTimeout(preview, 260); };
+  const schedule = () => { clearTimeout(timer); timer = setTimeout(preview, 200); };
   async function preview(){
     if(!srcBytes) return;
+    if(rendering){ dirty = true; return; }   // 預覽進行中就先記著,做完再補一次
+    rendering = true;
     try{
-      const doc = await PDFDocument.load(srcBytes.slice(), {ignoreEncryption:true});
       const set = targets();
       const first = set.size ? Math.min(...set) : 0;
-      await apply(doc, new Set([first]));
+      const base = await getPreviewBase(first);
+      const doc = await PDFDocument.load(base.slice(), {ignoreEncryption:true});
+      await apply(doc, new Set([0]));
       const d = await pdfjsLib.getDocument({data: await doc.save()}).promise;
-      const pg = await d.getPage(first+1);
+      const pg = await d.getPage(1);
       const b = pg.getViewport({scale:1});
       const vp = pg.getViewport({scale: Math.min(760/b.width, 900/b.height)});
       const c = document.createElement('canvas'); c.width=vp.width; c.height=vp.height;
@@ -909,6 +930,8 @@ $('foot').textContent = '光田 PDF 小幫手 — 所有處理都在你的瀏覽
       $('wm-preview').innerHTML=''; $('wm-preview').appendChild(c);
       $('wm-info').textContent = `共 ${pageCount} 頁 — 預覽第 ${first+1} 頁`;
     }catch(e){ $('wm-info').textContent = '預覽失敗：'+e.message; }
+    rendering = false;
+    if(dirty){ dirty = false; preview(); }
   }
   $('wm-text-on').addEventListener('change', e=>{ S.textOn=e.target.checked; $('wm-text-fields').disabled=!S.textOn; schedule(); });
   $('wm-img-on').addEventListener('change', e=>{ S.imgOn=e.target.checked; $('wm-img-fields').disabled=!S.imgOn; schedule(); });
@@ -935,11 +958,17 @@ $('foot').textContent = '光田 PDF 小幫手 — 所有處理都在你的瀏覽
   });
   $('wm-export').addEventListener('click', async ()=>{
     const btn=$('wm-export'); btn.disabled=true;
+    $('wm-info').textContent = '套用中…大檔案要一點時間，請稍候';
     try{
       const doc = await PDFDocument.load(srcBytes.slice(), {ignoreEncryption:true});
-      if(!await apply(doc, targets())) alert('請至少啟用一種浮水印（文字或圖片）');
-      else downloadBytes(await doc.save(), srcName.replace(/\.pdf$/i,'')+'_浮水印.pdf');
-    }catch(e){ alert('套用失敗：'+e.message); }
+      if(!await apply(doc, targets())){
+        alert('請至少啟用一種浮水印（文字或圖片）');
+        $('wm-info').textContent = `共 ${pageCount} 頁`;
+      }else{
+        downloadBytes(await doc.save(), srcName.replace(/\.pdf$/i,'')+'_浮水印.pdf');
+        $('wm-info').textContent = `完成，已下載（共 ${pageCount} 頁）`;
+      }
+    }catch(e){ alert('套用失敗：'+e.message); $('wm-info').textContent=''; }
     btn.disabled=false;
   });
 })();
@@ -1009,6 +1038,7 @@ $('foot').textContent = '光田 PDF 小幫手 — 所有處理都在你的瀏覽
 /* ═══════════════ 加頁碼 ═══════════════ */
 (function(){
   let bytes=null, name='', total=0, timer=null;
+  let fullDoc=null, baseCache={idx:-1, bytes:null}, rendering=false, dirty=false;
   const S = {format:'n', pos:'bc', start:1, from:1, size:11, margin:28};
 
   bindDrop($('pn-drop'), $('pn-input'), load);
@@ -1016,12 +1046,22 @@ $('foot').textContent = '光田 PDF 小幫手 — 所有處理都在你的瀏覽
   async function loadBytes(fname, buf){
     bytes = buf instanceof Uint8Array ? buf : new Uint8Array(buf);
     name = fname;
+    fullDoc = null; baseCache = {idx:-1, bytes:null};
     const d = await pdfjsLib.getDocument({data:bytes.slice()}).promise;
     total = d.numPages; d.destroy();
     $('pn-filename').textContent = fname;
     $('pn-export').disabled = false;
     $('pn-info').textContent = `共 ${total} 頁`;
     schedule();
+  }
+  async function getPreviewBase(idx){
+    if(baseCache.idx === idx && baseCache.bytes) return baseCache.bytes;
+    if(!fullDoc) fullDoc = await PDFDocument.load(bytes.slice(), {ignoreEncryption:true});
+    const one = await PDFDocument.create();
+    const [pg] = await one.copyPages(fullDoc, [idx]);
+    one.addPage(pg);
+    baseCache = {idx, bytes: await one.save()};
+    return baseCache.bytes;
   }
   TOOLBOX.pagenum = loadBytes;
   async function load(files){
@@ -1037,31 +1077,36 @@ $('foot').textContent = '光田 PDF 小幫手 — 所有處理都在你的瀏覽
       default: return String(num);
     }
   }
-  async function apply(doc, onlyFirst){
+  /* lastNum 用整份文件的真實頁數算,預覽抽單頁時「共 N 頁」格式才不會顯示錯 */
+  const lastNum = () => S.start + (total - Math.max(1, S.from));
+  async function stampPage(doc, page, num){
+    const sp = await textSprite(label(num, lastNum()), S.size, '#333333');
+    const {width:w, height:h} = page.getSize();
+    const M = S.margin;
+    const x = S.pos[1]==='l' ? M : S.pos[1]==='r' ? w-sp.wPt-M : (w-sp.wPt)/2;
+    const y = S.pos[0]==='t' ? h-sp.hPt-M : M;
+    page.drawImage(await doc.embedPng(sp.bytes), {x, y, width:sp.wPt, height:sp.hPt});
+  }
+  async function apply(doc){
     const arr = doc.getPages();
     const from = Math.max(1, S.from);
-    const totalNumbered = arr.length - from + 1;
-    const limit = onlyFirst ? Math.min(arr.length, from) : arr.length;
-    for(let i = from-1; i < limit; i++){
-      const page = arr[i]; if(!page) continue;
-      const num = S.start + (i - (from-1));
-      const sp = await textSprite(label(num, S.start + totalNumbered - 1), S.size, '#333333');
-      const {width:w, height:h} = page.getSize();
-      const M = S.margin;
-      const x = S.pos[1]==='l' ? M : S.pos[1]==='r' ? w-sp.wPt-M : (w-sp.wPt)/2;
-      const y = S.pos[0]==='t' ? h-sp.hPt-M : M;
-      page.drawImage(await doc.embedPng(sp.bytes), {x, y, width:sp.wPt, height:sp.hPt});
+    for(let i = from-1; i < arr.length; i++){
+      await stampPage(doc, arr[i], S.start + (i - (from-1)));
     }
   }
-  const schedule = () => { clearTimeout(timer); timer = setTimeout(preview, 260); };
+  const schedule = () => { clearTimeout(timer); timer = setTimeout(preview, 200); };
   async function preview(){
     if(!bytes) return;
+    if(rendering){ dirty = true; return; }
+    rendering = true;
     try{
-      const doc = await PDFDocument.load(bytes.slice(), {ignoreEncryption:true});
-      await apply(doc, true);
-      const idx = Math.min(Math.max(1,S.from), total);
+      const from = Math.max(1, S.from);
+      const idx = Math.min(from, total);           // 預覽第一張會被標號的頁
+      const base = await getPreviewBase(idx-1);
+      const doc = await PDFDocument.load(base.slice(), {ignoreEncryption:true});
+      if(from <= total) await stampPage(doc, doc.getPage(0), S.start);
       const d = await pdfjsLib.getDocument({data: await doc.save()}).promise;
-      const pg = await d.getPage(idx);
+      const pg = await d.getPage(1);
       const b = pg.getViewport({scale:1});
       const vp = pg.getViewport({scale: Math.min(760/b.width, 900/b.height)});
       const c = document.createElement('canvas'); c.width=vp.width; c.height=vp.height;
@@ -1070,6 +1115,8 @@ $('foot').textContent = '光田 PDF 小幫手 — 所有處理都在你的瀏覽
       $('pn-preview').innerHTML=''; $('pn-preview').appendChild(c);
       $('pn-info').textContent = `共 ${total} 頁 — 預覽第 ${idx} 頁`;
     }catch(e){ $('pn-info').textContent='預覽失敗：'+e.message; }
+    rendering = false;
+    if(dirty){ dirty = false; preview(); }
   }
   $('pn-format').addEventListener('change', e=>{ S.format=e.target.value; schedule(); });
   bindPos($('pn-pos'), v=>{ S.pos=v; schedule(); });
@@ -1079,11 +1126,13 @@ $('foot').textContent = '光田 PDF 小幫手 — 所有處理都在你的瀏覽
   $('pn-margin').addEventListener('input', e=>{ S.margin=+e.target.value; $('pn-margin-v').textContent=e.target.value+' pt'; schedule(); });
   $('pn-export').addEventListener('click', async ()=>{
     const btn=$('pn-export'); btn.disabled=true;
+    $('pn-info').textContent = '處理中…請稍候';
     try{
       const doc = await PDFDocument.load(bytes.slice(), {ignoreEncryption:true});
-      await apply(doc, false);
+      await apply(doc);
       downloadBytes(await doc.save(), name.replace(/\.pdf$/i,'')+'_頁碼.pdf');
-    }catch(e){ alert('加頁碼失敗：'+e.message); }
+      $('pn-info').textContent = `完成，已下載（共 ${total} 頁）`;
+    }catch(e){ alert('加頁碼失敗：'+e.message); $('pn-info').textContent=''; }
     btn.disabled=false;
   });
 })();
