@@ -20,7 +20,12 @@ body{
 }
 header{background:linear-gradient(135deg,#0d3b4f,#137a9c); color:#fff; padding:22px 28px}
 .hwrap{max-width:1180px; margin:0 auto; display:flex; align-items:center; gap:14px}
-header h1{font-size:21px; font-weight:700; letter-spacing:.5px; cursor:pointer}
+#brand{
+  background:none; border:none; padding:6px 10px; margin:-6px -10px; border-radius:10px;
+  text-align:left; cursor:pointer; color:inherit; font-family:inherit; transition:.15s;
+}
+#brand:hover{background:rgba(255,255,255,.12)}
+header h1{font-size:21px; font-weight:700; letter-spacing:.5px}
 header p{font-size:12.5px; opacity:.8; margin-top:3px}
 .badge{
   margin-left:auto; font-size:11.5px; background:rgba(255,255,255,.16);
@@ -110,11 +115,25 @@ fieldset:disabled{opacity:.42}
 
 /* ── 縮圖格 ── */
 .grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(148px,1fr)); gap:14px}
-.pagecard{border:1px solid var(--line); border-radius:10px; background:#fff; padding:8px; position:relative; transition:.15s}
-.pagecard.drg{cursor:grab}
+.pagecard{border:1px solid var(--line); border-radius:10px; background:#fff; padding:8px; position:relative; transition:box-shadow .15s}
+.pagecard.drg{cursor:grab; user-select:none; -webkit-user-select:none}
+.pagecard.drg:active{cursor:grabbing}
 .pagecard:hover{box-shadow:0 3px 12px rgba(20,40,60,.13)}
-.pagecard.dragging{opacity:.34}
-.pagecard.dropTarget{outline:2px solid var(--accent); outline-offset:1px}
+.pagecard.dragging{opacity:.3}
+.pagecard.dropTarget{outline:2.5px solid var(--accent); outline-offset:2px}
+.pagecard.ghost{
+  position:fixed; z-index:999; width:164px; pointer-events:none; opacity:.9;
+  box-shadow:0 10px 30px rgba(15,50,70,.32); transform:rotate(-2.5deg); margin:0;
+}
+.pagecard.ghost .delbtn,.pagecard.ghost .pageops{display:none}
+.delbtn{
+  position:absolute; top:6px; right:6px; width:23px; height:23px; border-radius:12px;
+  border:1px solid var(--line); background:rgba(255,255,255,.95); color:var(--ink2);
+  cursor:pointer; display:flex; align-items:center; justify-content:center;
+  box-shadow:0 1px 4px rgba(0,0,0,.12); transition:.14s; padding:0;
+}
+.delbtn:hover{background:var(--err); border-color:var(--err); color:#fff}
+.delbtn svg{width:12px; height:12px; stroke:currentColor; stroke-width:2.8; fill:none}
 .pagecard.sel{border-color:var(--accent); background:var(--soft)}
 .thumbwrap{height:168px; display:flex; align-items:center; justify-content:center; background:#f2f5f8; border-radius:6px; overflow:hidden}
 .thumbwrap canvas,.thumbwrap .blank{max-width:100%; max-height:100%; box-shadow:0 1px 5px rgba(0,0,0,.18)}
@@ -153,10 +172,10 @@ footer{max-width:1180px; margin:0 auto; padding:0 28px 28px; font-size:11.5px; c
 <body>
 <header>
   <div class="hwrap">
-    <div>
-      <h1 id="brand">光田 PDF 小幫手</h1>
+    <button id="brand" title="回首頁">
+      <h1>光田 PDF 小幫手</h1>
       <p>合併、拆分、浮水印、頁碼 — 檔案全程留在你的電腦，不會上傳任何網站</p>
-    </div>
+    </button>
     <span class="badge">
       <svg viewBox="0 0 24 24"><path d="M12 2.7 5.6 9a9 9 0 1 0 12.8 0z"/><path d="m9 12 2 2 4-4"/></svg>
       檔案不上傳 · 免安裝免註冊
@@ -556,7 +575,7 @@ $('foot').textContent = '光田 PDF 小幫手 — 所有處理都在你的瀏覽
 (function(){
   const grid = $('og-grid');
   const COLORS = ['#0f5f7a','#8a4d9e','#1d7a4f','#b3612e','#3d5aad','#a03a5e'];
-  let sources = new Map(), pages = [], uidSeq = 0, srcSeq = 0, dragUid = null;
+  let sources = new Map(), pages = [], uidSeq = 0, srcSeq = 0;
 
   $('og-add').addEventListener('click', ()=>$('og-input').click());
   $('og-input').addEventListener('change', async e=>{ await addFiles([...e.target.files]); e.target.value=''; });
@@ -589,6 +608,71 @@ $('foot').textContent = '光田 PDF 小幫手 — 所有處理都在你的瀏覽
   $('og-blank').addEventListener('click', ()=>{ pages.push({uid:'p'+(uidSeq++), srcId:null, pageIndex:-1, rotDelta:0, canvas:null}); render(); });
   $('og-clear').addEventListener('click', ()=>{ pages=[]; sources.clear(); render(); });
 
+  /* 用 pointer 事件做拖曳排序：比瀏覽器原生 HTML5 拖放可靠，也支援平板觸控 */
+  function startDrag(e, p, card){
+    if(e.button !== 0 && e.pointerType === 'mouse') return;
+    if(e.target.closest('.pageops') || e.target.closest('.delbtn')) return;
+    e.preventDefault();
+    const sx = e.clientX, sy = e.clientY;
+    const r = card.getBoundingClientRect();
+    const offX = sx - r.left, offY = sy - r.top;
+    let ghost = null, scrollTimer = null;
+
+    const clearMarks = () => grid.querySelectorAll('.pagecard').forEach(c=>c.classList.remove('dropTarget'));
+    const cardUnder = (x,y) => {
+      const el = document.elementFromPoint(x,y);
+      const t = el && el.closest ? el.closest('.pagecard') : null;
+      return (t && t.dataset.uid && t.dataset.uid !== p.uid) ? t : null;
+    };
+    function move(ev){
+      if(!ghost){
+        if(Math.hypot(ev.clientX-sx, ev.clientY-sy) < 6) return;
+        card.classList.add('dragging');
+        ghost = card.cloneNode(true);
+        ghost.classList.add('ghost');
+        // cloneNode 不會複製 canvas 的畫面內容，要自己重畫一次
+        const a = card.querySelector('canvas'), b = ghost.querySelector('canvas');
+        if(a && b){ b.width=a.width; b.height=a.height; b.getContext('2d').drawImage(a,0,0); }
+        document.body.appendChild(ghost);
+      }
+      ghost.style.left = (ev.clientX - offX) + 'px';
+      ghost.style.top  = (ev.clientY - offY) + 'px';
+      clearMarks();
+      const t = cardUnder(ev.clientX, ev.clientY);
+      if(t) t.classList.add('dropTarget');
+      // 靠近視窗上下緣時自動捲動
+      clearInterval(scrollTimer); scrollTimer = null;
+      const M = 90, y = ev.clientY;
+      const dir = y < M ? -1 : y > innerHeight - M ? 1 : 0;
+      if(dir) scrollTimer = setInterval(()=>scrollBy(0, dir*14), 16);
+    }
+    function up(ev){
+      document.removeEventListener('pointermove', move);
+      document.removeEventListener('pointerup', up);
+      document.removeEventListener('pointercancel', up);
+      clearInterval(scrollTimer);
+      if(ghost){
+        ghost.remove();
+        const t = cardUnder(ev.clientX, ev.clientY);
+        if(t){
+          const from = pages.findIndex(x=>x.uid===p.uid);
+          // 目標索引必須在搬走元素「之前」算，否則後面的索引會位移一格
+          const to = pages.findIndex(x=>x.uid===t.dataset.uid);
+          if(from >= 0 && to >= 0){
+            const [item] = pages.splice(from,1);
+            pages.splice(to, 0, item);
+          }
+        }
+      }
+      clearMarks();
+      card.classList.remove('dragging');
+      render();
+    }
+    document.addEventListener('pointermove', move);
+    document.addEventListener('pointerup', up);
+    document.addEventListener('pointercancel', up);
+  }
+
   function render(){
     grid.innerHTML='';
     $('og-empty').style.display = pages.length ? 'none':'block';
@@ -597,7 +681,7 @@ $('foot').textContent = '光田 PDF 小幫手 — 所有處理都在你的瀏覽
     pages.forEach((p,idx)=>{
       const src = p.srcId ? sources.get(p.srcId) : null;
       const card = document.createElement('div');
-      card.className='pagecard drg'; card.draggable=true;
+      card.className='pagecard drg'; card.dataset.uid = p.uid;
       const wrap = document.createElement('div'); wrap.className='thumbwrap';
       if(p.canvas){ p.canvas.style.transform = `rotate(${p.rotDelta}deg)`; wrap.appendChild(p.canvas); }
       else{ const b=document.createElement('div'); b.className='blank'; b.textContent='空白頁'; wrap.appendChild(b); }
@@ -611,33 +695,26 @@ $('foot').textContent = '光田 PDF 小幫手 — 所有處理都在你的瀏覽
       const ops = document.createElement('div'); ops.className='pageops';
       ops.innerHTML = `
         <button class="iconbtn" data-op="rotl" title="逆時針旋轉"><svg viewBox="0 0 24 24"><path d="M3 8a9 9 0 1 1 2 8M3 8V3m0 5h5"/></svg></button>
-        <button class="iconbtn" data-op="rotr" title="順時針旋轉"><svg viewBox="0 0 24 24"><path d="M21 8a9 9 0 1 0-2 8m2-8V3m0 5h-5"/></svg></button>
-        <button class="iconbtn danger" data-op="del" title="刪除此頁"><svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2m-9 0 1 14h8l1-14"/></svg></button>`;
+        <button class="iconbtn" data-op="rotr" title="順時針旋轉"><svg viewBox="0 0 24 24"><path d="M21 8a9 9 0 1 0-2 8m2-8V3m0 5h-5"/></svg></button>`;
       meta.appendChild(ops);
       card.appendChild(meta);
       const num=document.createElement('span'); num.className='ordernum'; num.textContent=idx+1; card.appendChild(num);
+      const del=document.createElement('button'); del.className='delbtn'; del.title='刪除此頁';
+      del.innerHTML='<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg>';
+      card.appendChild(del);
 
+      del.addEventListener('click', e=>{
+        e.stopPropagation();
+        pages = pages.filter(x=>x.uid!==p.uid);
+        render();
+      });
       ops.addEventListener('click', e=>{
         const op = e.target.closest('[data-op]')?.dataset.op; if(!op) return;
-        if(op==='del') pages = pages.filter(x=>x.uid!==p.uid);
         if(op==='rotl') p.rotDelta = (p.rotDelta+270)%360;
         if(op==='rotr') p.rotDelta = (p.rotDelta+90)%360;
         render();
       });
-      card.addEventListener('dragstart', ()=>{ dragUid=p.uid; card.classList.add('dragging'); });
-      card.addEventListener('dragend', ()=>{ dragUid=null; render(); });
-      card.addEventListener('dragover', e=>{ if(dragUid && dragUid!==p.uid){ e.preventDefault(); card.classList.add('dropTarget'); } });
-      card.addEventListener('dragleave', ()=>card.classList.remove('dropTarget'));
-      card.addEventListener('drop', e=>{
-        e.preventDefault();
-        if(!dragUid || dragUid===p.uid) return;
-        const from = pages.findIndex(x=>x.uid===dragUid);
-        if(from<0) return;
-        const [item] = pages.splice(from,1);
-        const to = pages.findIndex(x=>x.uid===p.uid);
-        pages.splice(to<0 ? pages.length : to, 0, item);
-        render();
-      });
+      card.addEventListener('pointerdown', e=>startDrag(e, p, card));
       grid.appendChild(card);
     });
   }
