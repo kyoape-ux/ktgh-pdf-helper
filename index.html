@@ -85,6 +85,7 @@ main{max-width:1180px; margin:0 auto; padding:26px 28px 70px}
 .btn svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2; flex:none}
 .toolbar{display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:16px}
 .toolbar .spacer{flex:1}
+.fmt{font-size:11.5px; color:var(--ink2); background:#eef1f5; padding:4px 10px; border-radius:20px; letter-spacing:.3px}
 .hint{font-size:12.5px; color:var(--ink2); line-height:1.75}
 .note{border-radius:9px; padding:11px 15px; font-size:13px; margin-bottom:14px; line-height:1.7}
 .note.warn{background:#fdf6e3; color:var(--warn); border:1px solid #ecdfb8}
@@ -193,11 +194,12 @@ footer{max-width:1180px; margin:0 auto; padding:0 28px 28px; font-size:11.5px; c
 <section class="task" id="task-organize">
   <div class="taskhead">
     <button class="back"><svg viewBox="0 0 24 24"><path d="M19 12H5m0 0 7-7m-7 7 7 7"/></svg></button>
-    <div><h2>合併與整理 PDF</h2><div class="sub">多份檔案合成一份，拖拉調順序、刪頁、旋轉、插空白頁。圖片也可以直接加進來</div></div>
+    <div><h2>合併與整理 PDF</h2><div class="sub">多份檔案合成一份，拖拉調順序、刪頁、旋轉、插空白頁　·　可放入 <b>PDF、JPG、PNG</b></div></div>
   </div>
   <div class="panel">
     <div class="toolbar">
       <button class="btn" id="og-add"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>加入檔案</button>
+      <span class="fmt">PDF · JPG · PNG</span>
       <button class="btn" id="og-blank"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/></svg>插入空白頁</button>
       <button class="btn" id="og-clear"><svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2m-9 0 1 14h8l1-14"/></svg>全部清空</button>
       <div class="spacer"></div>
@@ -212,7 +214,7 @@ footer{max-width:1180px; margin:0 auto; padding:0 28px 28px; font-size:11.5px; c
     </div>
     <input type="file" id="og-input" accept=".pdf,image/png,image/jpeg" multiple hidden>
     <div class="grid" id="og-grid"></div>
-    <div class="empty" id="og-empty">點「加入檔案」載入 PDF 或圖片，也可以直接把檔案拖進這個區域。<br>載入後拖拉縮圖就能調整順序。</div>
+    <div class="empty" id="og-empty">點「加入檔案」，或直接把檔案拖進這個區域。<br>支援 <b>PDF、JPG、PNG</b> — 圖片會自動轉成 PDF 頁面，橫式圖片自動排成橫向。<br>載入後拖拉縮圖就能調整順序。</div>
   </div>
 </section>
 
@@ -359,6 +361,54 @@ footer{max-width:1180px; margin:0 auto; padding:0 28px 28px; font-size:11.5px; c
       <p class="hint" style="margin-top:10px" id="pn-info"></p>
     </div>
   </div></div>
+</section>
+
+<!-- ══════════ 壓縮 PDF ══════════ -->
+<section class="task" id="task-compress">
+  <div class="taskhead">
+    <button class="back"><svg viewBox="0 0 24 24"><path d="M19 12H5m0 0 7-7m-7 7 7 7"/></svg></button>
+    <div><h2>壓縮 PDF</h2><div class="sub">縮小檔案方便用 email 或 LINE 傳送，全程在你的電腦處理</div></div>
+  </div>
+  <div class="panel">
+    <div class="dropzone" id="cp-drop" style="padding:24px">
+      <strong id="cp-filename">選擇要壓縮的 PDF</strong>
+      <small>拖進來或點一下選檔</small>
+    </div>
+    <input type="file" id="cp-input" accept=".pdf" hidden>
+
+    <div id="cp-opts" style="display:none;margin-top:16px">
+      <div class="row2" style="max-width:760px">
+        <div class="subcard" style="margin-bottom:0">
+          <h3>壓縮方式</h3>
+          <div class="field">
+            <div class="seg" id="cp-mode">
+              <button data-v="smart" class="active">標準（文字保持可選取）</button>
+              <button data-v="raster">圖片化（檔案最小）</button>
+            </div>
+          </div>
+          <p class="hint" id="cp-mode-hint">只重新壓縮 PDF 裡的圖片，文字、表格完全不動，仍可選取和搜尋。適合大部分情況。</p>
+        </div>
+        <div class="subcard" style="margin-bottom:0">
+          <h3>壓縮程度</h3>
+          <div class="field">
+            <div class="seg" id="cp-level">
+              <button data-v="hi">高畫質</button>
+              <button data-v="mid" class="active">平衡</button>
+              <button data-v="lo">最小檔案</button>
+            </div>
+          </div>
+          <p class="hint">拿捏畫質與檔案大小。「平衡」適合大多數公文與報告。</p>
+        </div>
+      </div>
+      <div style="margin-top:16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+        <button class="btn primary" id="cp-run">
+          <svg viewBox="0 0 24 24"><path d="M8 3v4H4m12-4v4h4M8 21v-4H4m12 4v-4h4"/></svg>壓縮並下載
+        </button>
+        <span class="hint" id="cp-status"></span>
+      </div>
+      <div class="note info" id="cp-result" style="display:none;margin:16px 0 0"></div>
+    </div>
+  </div>
 </section>
 
 <!-- ══════════ PDF 轉圖片 ══════════ -->
@@ -544,6 +594,8 @@ const TOOLS = [
    icon:'<path d="M8 3H5a2 2 0 0 0-2 2v3m0 8v3a2 2 0 0 0 2 2h3m8-18h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3"/><path d="M12 3v18"/>'},
   {id:'pagenum', title:'加頁碼', desc:'公文、報告裝訂前補上頁碼。可選位置、格式，也能指定從第幾頁開始標。',
    icon:'<path d="M4 4h16v16H4z"/><path d="M9 16h6"/><path d="M12 8v8"/>'},
+  {id:'compress', title:'壓縮 PDF', desc:'檔案太大寄不出去時用。標準模式重壓內部圖片、文字保持可選取；也有檔案最小的圖片化模式。',
+   icon:'<path d="M8 3v4H4m12-4v4h4M8 21v-4H4m12 4v-4h4"/><rect x="9.5" y="9.5" width="5" height="5" rx="1"/>'},
   {id:'toimg', title:'PDF 轉圖片', desc:'把頁面存成 PNG 或 JPG，貼進簡報、LINE 或公告用。可選畫質。',
    icon:'<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/>'},
   {id:'word', title:'Word 轉 PDF', tag:'操作說明',
@@ -1032,6 +1084,167 @@ $('foot').textContent = '光田 PDF 小幫手 — 所有處理都在你的瀏覽
       await apply(doc, false);
       downloadBytes(await doc.save(), name.replace(/\.pdf$/i,'')+'_頁碼.pdf');
     }catch(e){ alert('加頁碼失敗：'+e.message); }
+    btn.disabled=false;
+  });
+})();
+
+/* ═══════════════ 壓縮 PDF ═══════════════ */
+(function(){
+  const { PDFName, PDFRawStream, PDFArray, PDFDict, decodePDFRawStream } = PDFLib;
+  let bytes=null, name='';
+  const S = {mode:'smart', level:'mid'};
+  /* maxDim:圖片最長邊上限(px), q:JPEG 品質, dpi:圖片化模式的解析度 */
+  const LEVELS = {
+    hi:  {maxDim:2400, q:0.85, dpi:150, rq:0.82},
+    mid: {maxDim:1600, q:0.72, dpi:120, rq:0.75},
+    lo:  {maxDim:1100, q:0.55, dpi:96,  rq:0.62},
+  };
+  const fmtMB = n => n > 1024*1024 ? (n/1048576).toFixed(1)+' MB' : Math.round(n/1024)+' KB';
+
+  bindDrop($('cp-drop'), $('cp-input'), load);
+  bindPanelDrop('task-compress', load);
+  async function loadBytes(fname, buf){
+    bytes = buf instanceof Uint8Array ? buf : new Uint8Array(buf);
+    name = fname;
+    $('cp-filename').textContent = `${fname}（${fmtMB(bytes.length)}）`;
+    $('cp-opts').style.display='block';
+    $('cp-result').style.display='none';
+    $('cp-status').textContent='';
+  }
+  TOOLBOX.compress = loadBytes;
+  async function load(files){
+    const f = files.find(isPdf); if(!f) return;
+    await loadBytes(f.name, new Uint8Array(await f.arrayBuffer()));
+  }
+  bindSeg($('cp-mode'), v=>{
+    S.mode=v;
+    $('cp-mode-hint').textContent = v==='smart'
+      ? '只重新壓縮 PDF 裡的圖片，文字、表格完全不動，仍可選取和搜尋。適合大部分情況。'
+      : '整頁轉成圖片重新打包，檔案最小，但文字會變成圖片、無法選取搜尋。標準模式縮不動時再用這個。';
+  });
+  bindSeg($('cp-level'), v=>{ S.level=v; });
+
+  const jpegFromCanvas = (c,q) => new Promise(r=>c.toBlob(b=>r(b), 'image/jpeg', q));
+  const imgFromBlob = blob => new Promise((res,rej)=>{
+    const u=URL.createObjectURL(blob); const im=new Image();
+    im.onload=()=>{ URL.revokeObjectURL(u); res(im); };
+    im.onerror=()=>{ URL.revokeObjectURL(u); rej(new Error('圖片解碼失敗')); };
+    im.src=u;
+  });
+
+  /* 標準模式:走訪 PDF 內部所有圖片物件,縮小尺寸並以 JPEG 重新編碼 */
+  async function smartCompress(level){
+    const doc = await PDFDocument.load(bytes.slice(), {ignoreEncryption:true});
+    const ctx = doc.context;
+    const N = s => PDFName.of(s);
+    let scanned=0, replaced=0;
+    for(const [ref, obj] of ctx.enumerateIndirectObjects()){
+      if(!(obj instanceof PDFRawStream)) continue;
+      const dict = obj.dict;
+      if(dict.get(N('Subtype')) !== N('Image')) continue;
+      scanned++;
+      if(dict.get(N('SMask'))) continue;            // 有透明遮罩的先跳過,避免破圖
+      const w = dict.get(N('Width'))?.asNumber?.(), h = dict.get(N('Height'))?.asNumber?.();
+      if(!w || !h || w*h < 90000) continue;          // 小圖不值得動(300x300 以下)
+      let filter = dict.get(N('Filter'));
+      if(filter instanceof PDFArray) filter = filter.size()===1 ? filter.get(0) : null;
+      let source = null;                             // canvas 來源
+      try{
+        if(filter === N('DCTDecode')){
+          source = await imgFromBlob(new Blob([obj.contents], {type:'image/jpeg'}));
+        }else if(filter === N('FlateDecode')){
+          // 只處理 8-bit 灰階/RGB(含 ICCBased),其他色彩空間跳過
+          const bpc = dict.get(N('BitsPerComponent'))?.asNumber?.();
+          if(bpc !== 8) continue;
+          let cs = dict.get(N('ColorSpace'));
+          let comps = 0;
+          if(cs === N('DeviceRGB')) comps=3;
+          else if(cs === N('DeviceGray')) comps=1;
+          else if(cs instanceof PDFArray && cs.get(0) === N('ICCBased')){
+            const icc = ctx.lookup(cs.get(1));
+            const n = icc?.dict?.get?.(N('N'))?.asNumber?.();
+            if(n===3) comps=3; else if(n===1) comps=1;
+          }
+          if(!comps) continue;
+          const raw = decodePDFRawStream(obj).decode();
+          if(raw.length < w*h*comps) continue;
+          const c = document.createElement('canvas'); c.width=w; c.height=h;
+          const id = c.getContext('2d').createImageData(w,h);
+          for(let i=0,j=0;i<w*h;i++){
+            if(comps===3){ id.data[i*4]=raw[j++]; id.data[i*4+1]=raw[j++]; id.data[i*4+2]=raw[j++]; }
+            else{ const g=raw[j++]; id.data[i*4]=g; id.data[i*4+1]=g; id.data[i*4+2]=g; }
+            id.data[i*4+3]=255;
+          }
+          c.getContext('2d').putImageData(id,0,0);
+          source = c;
+        }else continue;
+      }catch(_){ continue; }
+      // 依等級縮小 + 重新編碼
+      const sw = source.width || w, sh = source.height || h;
+      const scale = Math.min(1, level.maxDim / Math.max(sw, sh));
+      const nw = Math.max(1, Math.round(sw*scale)), nh = Math.max(1, Math.round(sh*scale));
+      const out = document.createElement('canvas'); out.width=nw; out.height=nh;
+      const octx = out.getContext('2d');
+      octx.fillStyle='#fff'; octx.fillRect(0,0,nw,nh);   // JPEG 無透明,墊白底
+      octx.drawImage(source, 0, 0, nw, nh);
+      const jb = new Uint8Array(await (await jpegFromCanvas(out, level.q)).arrayBuffer());
+      if(jb.length >= obj.contents.length * 0.92) continue;  // 沒省到就不換
+      const nd = ctx.obj({
+        Type:'XObject', Subtype:'Image', Width:nw, Height:nh,
+        ColorSpace:'DeviceRGB', BitsPerComponent:8, Filter:'DCTDecode', Length:jb.length,
+      });
+      ctx.assign(ref, PDFRawStream.of(nd, jb));
+      replaced++;
+      $('cp-status').textContent = `處理中… 已重壓 ${replaced} 張圖片`;
+      await new Promise(r=>setTimeout(r));
+    }
+    return {bytes: await doc.save(), scanned, replaced};
+  }
+
+  /* 圖片化模式:每頁畫成 JPEG 重新打包(檔案最小,文字變圖片) */
+  async function rasterCompress(level){
+    const src = await pdfjsLib.getDocument({data:bytes.slice()}).promise;
+    const out = await PDFDocument.create();
+    for(let i=1;i<=src.numPages;i++){
+      const pg = await src.getPage(i);
+      const base = pg.getViewport({scale:1});
+      const vp = pg.getViewport({scale: level.dpi/72});
+      const c = document.createElement('canvas'); c.width=vp.width; c.height=vp.height;
+      const cx = c.getContext('2d');
+      cx.fillStyle='#fff'; cx.fillRect(0,0,c.width,c.height);
+      await pg.render({canvasContext:cx, viewport:vp, intent:'print'}).promise;
+      const jb = new Uint8Array(await (await jpegFromCanvas(c, level.rq)).arrayBuffer());
+      const img = await out.embedJpg(jb);
+      const page = out.addPage([base.width, base.height]);
+      page.drawImage(img, {x:0, y:0, width:base.width, height:base.height});
+      $('cp-status').textContent = `處理中… ${i} / ${src.numPages} 頁`;
+      await new Promise(r=>setTimeout(r));
+    }
+    src.destroy();
+    return {bytes: await out.save()};
+  }
+
+  $('cp-run').addEventListener('click', async ()=>{
+    const btn=$('cp-run'); btn.disabled=true;
+    $('cp-result').style.display='none';
+    try{
+      const level = LEVELS[S.level];
+      const r = S.mode==='smart' ? await smartCompress(level) : await rasterCompress(level);
+      const before = bytes.length, after = r.bytes.length;
+      const saved = Math.round((1 - after/before)*100);
+      if(after >= before){
+        $('cp-result').style.display='block';
+        $('cp-result').textContent = S.mode==='smart'
+          ? `這份檔案的圖片已經壓得很緊了，標準模式縮不動（${fmtMB(before)}）。可以試試「圖片化」模式，或選「最小檔案」。`
+          : `壓出來反而沒有比較小（${fmtMB(before)} → ${fmtMB(after)}），原檔可能已經最佳化過了。`;
+      }else{
+        downloadBytes(r.bytes, name.replace(/\.pdf$/i,'')+'_壓縮.pdf');
+        $('cp-result').style.display='block';
+        $('cp-result').textContent = `完成：${fmtMB(before)} → ${fmtMB(after)}，省下 ${saved}%。`
+          + (S.mode==='smart' && saved < 5 ? ' 效果有限，可以試試「圖片化」模式。' : '');
+      }
+    }catch(e){ alert('壓縮失敗：'+e.message); }
+    $('cp-status').textContent='';
     btn.disabled=false;
   });
 })();
