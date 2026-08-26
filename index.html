@@ -4,13 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>光田 PDF 小幫手</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%237a5236'/%3E%3Cpath d='M11 8h7l5 5v11a2 2 0 0 1-2 2H11a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z' fill='none' stroke='%23fff' stroke-width='2' stroke-linejoin='round'/%3E%3Cpath d='M18 8v5h5' fill='none' stroke='%23fff' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230f5f7a'/%3E%3Cpath d='M11 8h7l5 5v11a2 2 0 0 1-2 2H11a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z' fill='none' stroke='%23fff' stroke-width='2' stroke-linejoin='round'/%3E%3Cpath d='M18 8v5h5' fill='none' stroke='%23fff' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E">
 <script src="lib/pdf-lib.min.js"></script>
 <script src="lib/pdf.min.js"></script>
 <style>
 :root{
-  --bg:#f7f4f0; --panel:#fff; --ink:#2b2118; --ink2:#6f6152; --ink3:#a3968a;
-  --line:#e6ddd2; --accent:#7a5236; --accent2:#96694a; --soft:#f1e8de;
+  --bg:#f4f6f9; --panel:#fff; --ink:#1c2733; --ink2:#5b6b7c; --ink3:#93a1b0;
+  --line:#dfe6ee; --accent:#0f5f7a; --accent2:#137a9c; --soft:#e3f0f4;
   --ok:#1d7a4f; --err:#b3372e; --warn:#8a6100;
 }
 *{box-sizing:border-box;margin:0;padding:0}
@@ -20,7 +20,7 @@ body{
   display:flex; flex-direction:column;
 }
 main{flex:1; width:100%}
-header{background:linear-gradient(135deg,#412d1d,#7a5236); color:#fff; padding:22px 28px}
+header{background:linear-gradient(135deg,#0d3b4f,#137a9c); color:#fff; padding:22px 28px}
 .hwrap{max-width:1180px; margin:0 auto; display:flex; align-items:center; gap:14px}
 #brand{
   background:none; border:none; padding:6px 10px; margin:-6px -10px; border-radius:10px;
@@ -50,7 +50,7 @@ main{max-width:1180px; margin:0 auto; padding:26px 28px 70px}
 .card .ic svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.7}
 .card h3{font-size:15.5px; margin-bottom:6px; display:flex; align-items:center; gap:8px; flex-wrap:wrap}
 .card p{font-size:12.8px; color:var(--ink2); line-height:1.65}
-.card .tag{font-size:10.5px; font-weight:500; background:#efe9e1; color:var(--ink2); padding:2px 8px; border-radius:10px}
+.card .tag{font-size:10.5px; font-weight:500; background:#eef1f5; color:var(--ink2); padding:2px 8px; border-radius:10px}
 
 /* ── 任務畫面 ── */
 .task{display:none}
@@ -69,8 +69,8 @@ main{max-width:1180px; margin:0 auto; padding:26px 28px 70px}
 
 /* ── 通用元件 ── */
 .dropzone{
-  border:2px dashed #cbbca9; border-radius:12px; padding:32px 20px; text-align:center;
-  color:var(--ink2); cursor:pointer; transition:.15s; background:#fdfbf8;
+  border:2px dashed #b9c6d4; border-radius:12px; padding:32px 20px; text-align:center;
+  color:var(--ink2); cursor:pointer; transition:.15s; background:#fafcfe;
 }
 .dropzone:hover,.dropzone.drag{border-color:var(--accent); background:var(--soft); color:var(--accent)}
 .dropzone strong{display:block; font-size:15px; margin-bottom:5px}
@@ -82,12 +82,12 @@ main{max-width:1180px; margin:0 auto; padding:26px 28px 70px}
 }
 .btn:hover:not(:disabled){border-color:var(--accent); color:var(--accent)}
 .btn.primary{
-  background:linear-gradient(135deg,#8a5c3a,#6b4527); border-color:#6b4527; color:#fff;
+  background:linear-gradient(135deg,#137a9c,#0d5064); border-color:#0d5064; color:#fff;
   font-weight:700; padding:10px 22px; font-size:14px;
-  box-shadow:0 3px 10px rgba(107,69,39,.35);
+  box-shadow:0 3px 10px rgba(13,80,100,.35);
 }
-.btn.primary:hover:not(:disabled){filter:brightness(1.12); color:#fff; box-shadow:0 4px 14px rgba(107,69,39,.45)}
-.btn.primary:disabled{background:#c9bdb0; border-color:#c9bdb0; box-shadow:none; opacity:1; color:#fff}
+.btn.primary:hover:not(:disabled){filter:brightness(1.12); color:#fff; box-shadow:0 4px 14px rgba(13,80,100,.45)}
+.btn.primary:disabled{background:#b7c6cf; border-color:#b7c6cf; box-shadow:none; opacity:1; color:#fff}
 .btn:disabled{opacity:.42; cursor:not-allowed}
 .btn svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2; flex:none}
 .toolbar{display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:16px}
@@ -95,7 +95,7 @@ main{max-width:1180px; margin:0 auto; padding:26px 28px 70px}
 .hint{font-size:12.5px; color:var(--ink2); line-height:1.75}
 .note{border-radius:9px; padding:11px 15px; font-size:13px; margin-bottom:14px; line-height:1.7}
 .note.warn{background:#fdf6e3; color:var(--warn); border:1px solid #ecdfb8}
-.note.info{background:var(--soft); color:#5a4030; border:1px solid #ddccb8}
+.note.info{background:var(--soft); color:#0b4d64; border:1px solid #c6dfe8}
 .field{margin-bottom:15px}
 .field label{display:block; font-size:13px; font-weight:600; margin-bottom:7px}
 .field input[type=text],.field input[type=number],.field select{
@@ -142,9 +142,9 @@ fieldset:disabled{opacity:.42}
 .delbtn:hover{background:var(--err); border-color:var(--err); color:#fff}
 .delbtn svg{width:12px; height:12px; stroke:currentColor; stroke-width:2.8; fill:none}
 .pagecard.sel{border-color:var(--accent); background:var(--soft)}
-.thumbwrap{height:168px; display:flex; align-items:center; justify-content:center; background:#f3efe9; border-radius:6px; overflow:hidden}
+.thumbwrap{height:168px; display:flex; align-items:center; justify-content:center; background:#f2f5f8; border-radius:6px; overflow:hidden}
 .thumbwrap canvas,.thumbwrap .blank{max-width:100%; max-height:100%; box-shadow:0 1px 5px rgba(0,0,0,.18)}
-.thumbwrap .blank{width:94px;height:133px;background:#fff;display:flex;align-items:center;justify-content:center;color:#c6b9aa;font-size:11px}
+.thumbwrap .blank{width:94px;height:133px;background:#fff;display:flex;align-items:center;justify-content:center;color:#b6c2cf;font-size:11px}
 .meta{display:flex; align-items:center; justify-content:space-between; margin-top:8px; gap:4px}
 .srcbadge{font-size:10.5px; padding:2px 8px; border-radius:10px; color:#fff; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:86px}
 .pageops{display:flex; gap:1px}
@@ -152,7 +152,7 @@ fieldset:disabled{opacity:.42}
 .iconbtn:hover{background:var(--soft); color:var(--accent)}
 .iconbtn.danger:hover{background:#fbecea; color:var(--err)}
 .iconbtn svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2}
-.ordernum{position:absolute; top:5px; left:5px; background:rgba(122,82,54,.92); color:#fff; font-size:11px; min-width:20px;height:20px;border-radius:10px; display:flex;align-items:center;justify-content:center; padding:0 5px}
+.ordernum{position:absolute; top:5px; left:5px; background:rgba(15,95,122,.9); color:#fff; font-size:11px; min-width:20px;height:20px;border-radius:10px; display:flex;align-items:center;justify-content:center; padding:0 5px}
 .checkmark{position:absolute; top:5px; right:5px; width:21px;height:21px;border-radius:11px; background:#fff; border:1.5px solid var(--line); display:flex;align-items:center;justify-content:center}
 .pagecard.sel .checkmark{background:var(--accent); border-color:var(--accent)}
 .checkmark svg{width:12px;height:12px;stroke:#fff;fill:none;stroke-width:3; display:none}
@@ -162,7 +162,7 @@ fieldset:disabled{opacity:.42}
 /* ── 兩欄版面 ── */
 .split{display:grid; grid-template-columns:336px 1fr; gap:22px; align-items:start}
 @media(max-width:900px){.split{grid-template-columns:1fr}}
-.previewbox{border:1px solid var(--line); border-radius:11px; background:#efe9e1; min-height:430px; display:flex; align-items:center; justify-content:center; padding:16px}
+.previewbox{border:1px solid var(--line); border-radius:11px; background:#eef1f5; min-height:430px; display:flex; align-items:center; justify-content:center; padding:16px}
 .previewbox canvas{max-width:100%; max-height:660px; box-shadow:0 2px 10px rgba(0,0,0,.2)}
 .previewbox .ph{color:var(--ink2); font-size:13.5px; text-align:center; line-height:1.8}
 
@@ -172,11 +172,11 @@ fieldset:disabled{opacity:.42}
   content:counter(s); position:absolute; left:0; top:1px; width:21px;height:21px;border-radius:11px;
   background:var(--accent); color:#fff; font-size:12px; display:flex;align-items:center;justify-content:center;
 }
-kbd{background:#efe9e1; border:1px solid var(--line); border-bottom-width:2px; border-radius:5px; padding:1px 6px; font-size:12.3px; font-family:inherit}
+kbd{background:#eef1f5; border:1px solid var(--line); border-bottom-width:2px; border-radius:5px; padding:1px 6px; font-size:12.3px; font-family:inherit}
 footer{
   margin-top:auto; width:100%; text-align:center;
   padding:16px 28px 20px; font-size:11.5px; color:var(--ink3); line-height:1.8;
-  border-top:1px solid var(--line); background:#efe9e1;
+  border-top:1px solid var(--line); background:#eef1f5;
 }
 </style>
 </head>
@@ -255,7 +255,7 @@ footer{
             <div class="swatches" id="wm-colors">
               <button class="swatch active" data-c="#888888" style="background:#888"></button>
               <button class="swatch" data-c="#b3372e" style="background:#b3372e"></button>
-              <button class="swatch" data-c="#7a5236" style="background:#7a5236"></button>
+              <button class="swatch" data-c="#0f5f7a" style="background:#0f5f7a"></button>
               <button class="swatch" data-c="#1d7a4f" style="background:#1d7a4f"></button>
             </div>
           </div>
@@ -637,14 +637,14 @@ function showHome(){
 document.querySelectorAll('.back').forEach(b=>b.addEventListener('click', showHome));
 $('brand').addEventListener('click', showHome);
 
-const VERSION = 'v1.6（2026-08-26）';
+const VERSION = 'v1.7（2026-08-26）';
 buildCards();
 $('foot').textContent = `光田 PDF 小幫手 ${VERSION} — 所有處理都在你的瀏覽器完成，檔案不會上傳到任何伺服器，關掉分頁就沒了`;
 
 /* ═══════════════ 合併與整理 ═══════════════ */
 (function(){
   const grid = $('og-grid');
-  const COLORS = ['#7a5236','#8a4d9e','#1d7a4f','#3d5aad','#a03a5e','#5b7a36'];
+  const COLORS = ['#0f5f7a','#8a4d9e','#1d7a4f','#b3612e','#3d5aad','#a03a5e'];
   let sources = new Map(), pages = [], uidSeq = 0, srcSeq = 0;
 
   $('og-add').addEventListener('click', ()=>$('og-input').click());
@@ -758,7 +758,7 @@ $('foot').textContent = `光田 PDF 小幫手 ${VERSION} — 所有處理都在�
       card.appendChild(wrap);
       const meta = document.createElement('div'); meta.className='meta';
       const badge = document.createElement('span'); badge.className='srcbadge';
-      badge.style.background = src ? src.color : '#a3968a';
+      badge.style.background = src ? src.color : '#93a1b0';
       badge.textContent = src ? (src.kind==='img' ? '圖片' : src.name.replace(/\.pdf$/i,'')+' p.'+(p.pageIndex+1)) : '空白';
       badge.title = src ? src.name : '空白頁';
       meta.appendChild(badge);
@@ -998,7 +998,7 @@ $('foot').textContent = `光田 PDF 小幫手 ${VERSION} — 所有處理都在�
       const wrap=document.createElement('div'); wrap.className='thumbwrap'; wrap.appendChild(c);
       card.appendChild(wrap);
       const meta=document.createElement('div'); meta.className='meta';
-      meta.innerHTML = `<span class="srcbadge" style="background:#6f6152">第 ${i+1} 頁</span>`;
+      meta.innerHTML = `<span class="srcbadge" style="background:#5b6b7c">第 ${i+1} 頁</span>`;
       card.appendChild(meta);
       const ck=document.createElement('span'); ck.className='checkmark';
       ck.innerHTML='<svg viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"/></svg>';
@@ -1348,7 +1348,7 @@ $('foot').textContent = `光田 PDF 小幫手 ${VERSION} — 所有處理都在�
       const wrap=document.createElement('div'); wrap.className='thumbwrap'; wrap.appendChild(thumb);
       card.appendChild(wrap);
       const meta=document.createElement('div'); meta.className='meta';
-      meta.innerHTML=`<span class="srcbadge" style="background:#6f6152">第 ${i} 頁</span>`;
+      meta.innerHTML=`<span class="srcbadge" style="background:#5b6b7c">第 ${i} 頁</span>`;
       const btn=document.createElement('button'); btn.className='iconbtn'; btn.title='下載這一頁';
       btn.innerHTML='<svg viewBox="0 0 24 24"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 21h16"/></svg>';
       btn.addEventListener('click', ()=>full.toBlob(b=>downloadBlob(b, `${name}_第${i}頁.${ext}`), fmt, 0.92));
