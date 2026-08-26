@@ -202,6 +202,12 @@ footer{max-width:1180px; margin:0 auto; padding:0 28px 28px; font-size:11.5px; c
       <button class="btn" id="og-clear"><svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2m-9 0 1 14h8l1-14"/></svg>全部清空</button>
       <div class="spacer"></div>
       <span class="hint" id="og-count"></span>
+      <button class="btn" id="og-to-wm" disabled title="先合併起來，直接帶到浮水印工具繼續處理">
+        <svg viewBox="0 0 24 24"><path d="M12 2.7 5.6 9a9 9 0 1 0 12.8 0z"/></svg>接著加浮水印
+      </button>
+      <button class="btn" id="og-to-pn" disabled title="先合併起來，直接帶到頁碼工具繼續處理">
+        <svg viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/><path d="M9 16h6"/><path d="M12 8v8"/></svg>接著加頁碼
+      </button>
       <button class="btn primary" id="og-export" disabled><svg viewBox="0 0 24 24"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 21h16"/></svg>合併並下載</button>
     </div>
     <input type="file" id="og-input" accept=".pdf,image/png,image/jpeg" multiple hidden>
@@ -430,6 +436,8 @@ footer{max-width:1180px; margin:0 auto; padding:0 28px 28px; font-size:11.5px; c
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'lib/pdf.worker.min.js';
 const { PDFDocument, degrees, rgb } = PDFLib;
 const $ = id => document.getElementById(id);
+/* 工具之間傳遞檔案用：各工具把自己的「直接載入位元組」函式註冊進來 */
+const TOOLBOX = {};
 
 function downloadBlob(blob, name){
   const a = document.createElement('a');
@@ -676,7 +684,7 @@ $('foot').textContent = '光田 PDF 小幫手 — 所有處理都在你的瀏覽
   function render(){
     grid.innerHTML='';
     $('og-empty').style.display = pages.length ? 'none':'block';
-    $('og-export').disabled = !pages.length;
+    [$('og-export'),$('og-to-wm'),$('og-to-pn')].forEach(b=>b.disabled = !pages.length);
     $('og-count').textContent = pages.length ? `共 ${pages.length} 頁` : '';
     pages.forEach((p,idx)=>{
       const src = p.srcId ? sources.get(p.srcId) : null;
@@ -719,34 +727,59 @@ $('foot').textContent = '光田 PDF 小幫手 — 所有處理都在你的瀏覽
     });
   }
 
-  $('og-export').addEventListener('click', async ()=>{
-    const btn=$('og-export'); btn.disabled=true; const old=btn.innerHTML; btn.textContent='處理中…';
-    try{
-      const out = await PDFDocument.create();
-      const loaded = new Map();
-      for(const p of pages){
-        if(!p.srcId){
-          const pg = out.addPage([595.28,841.89]);
-          if(p.rotDelta) pg.setRotation(degrees(p.rotDelta));
-          continue;
-        }
-        const src = sources.get(p.srcId);
-        if(src.kind==='img'){
-          const pg = await fileToImagePage(out, src.file);
-          if(p.rotDelta) pg.setRotation(degrees(p.rotDelta));
-          continue;
-        }
-        if(!loaded.has(p.srcId)) loaded.set(p.srcId, await PDFDocument.load(src.bytes, {ignoreEncryption:true}));
-        const [cp] = await out.copyPages(loaded.get(p.srcId), [p.pageIndex]);
-        if(p.rotDelta) cp.setRotation(degrees((cp.getRotation().angle + p.rotDelta)%360));
-        out.addPage(cp);
+  /* 依目前排好的順序合併出一份 PDF，回傳位元組與建議檔名 */
+  async function buildMerged(){
+    const out = await PDFDocument.create();
+    const loaded = new Map();
+    for(const p of pages){
+      if(!p.srcId){
+        const pg = out.addPage([595.28,841.89]);
+        if(p.rotDelta) pg.setRotation(degrees(p.rotDelta));
+        continue;
       }
-      const first = pages.find(p=>p.srcId);
-      const base = first ? sources.get(first.srcId).name.replace(/\.[^.]+$/,'') : '合併結果';
-      downloadBytes(await out.save(), base+'_合併.pdf');
-    }catch(e){ alert('合併失敗：'+e.message); }
-    btn.disabled=false; btn.innerHTML=old;
-  });
+      const src = sources.get(p.srcId);
+      if(src.kind==='img'){
+        const pg = await fileToImagePage(out, src.file);
+        if(p.rotDelta) pg.setRotation(degrees(p.rotDelta));
+        continue;
+      }
+      if(!loaded.has(p.srcId)) loaded.set(p.srcId, await PDFDocument.load(src.bytes, {ignoreEncryption:true}));
+      const [cp] = await out.copyPages(loaded.get(p.srcId), [p.pageIndex]);
+      if(p.rotDelta) cp.setRotation(degrees((cp.getRotation().angle + p.rotDelta)%360));
+      out.addPage(cp);
+    }
+    // 用「最先加入的 PDF」命名，這樣拖曳調順序不會讓檔名跟著跳動
+    const all = [...sources.values()].filter(s=>pages.some(p=>sources.get(p.srcId)===s));
+    const named = all.find(s=>s.kind==='pdf') || all[0];
+    const base = named ? named.name.replace(/\.[^.]+$/,'') : '合併結果';
+    return {bytes: await out.save(), name: base+'_合併.pdf'};
+  }
+
+  /* 共用的按鈕流程：顯示處理中 → 做事 → 還原 */
+  async function run(btn, job){
+    const old = btn.innerHTML;
+    [$('og-export'),$('og-to-wm'),$('og-to-pn')].forEach(b=>b.disabled=true);
+    btn.textContent = '處理中…';
+    try{ await job(); }
+    catch(e){ alert('合併失敗：'+e.message); }
+    btn.innerHTML = old;
+    render();
+  }
+
+  $('og-export').addEventListener('click', ()=>run($('og-export'), async ()=>{
+    const {bytes, name} = await buildMerged();
+    downloadBytes(bytes, name);
+  }));
+  $('og-to-wm').addEventListener('click', ()=>run($('og-to-wm'), async ()=>{
+    const {bytes, name} = await buildMerged();
+    await TOOLBOX.watermark(name, bytes);
+    showTask('watermark');
+  }));
+  $('og-to-pn').addEventListener('click', ()=>run($('og-to-pn'), async ()=>{
+    const {bytes, name} = await buildMerged();
+    await TOOLBOX.pagenum(name, bytes);
+    showTask('pagenum');
+  }));
 })();
 
 /* ═══════════════ 浮水印 ═══════════════ */
@@ -757,15 +790,23 @@ $('foot').textContent = '光田 PDF 小幫手 — 所有處理都在你的瀏覽
 
   bindDrop($('wm-drop'), $('wm-input'), load);
   bindPanelDrop('task-watermark', load);
-  async function load(files){
-    const f = files.find(isPdf); if(!f) return;
-    srcBytes = new Uint8Array(await f.arrayBuffer()); srcName = f.name;
+  async function loadBytes(name, bytes){
+    srcBytes = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+    srcName = name;
     const d = await pdfjsLib.getDocument({data:srcBytes.slice()}).promise;
     pageCount = d.numPages; d.destroy();
-    $('wm-filename').textContent = f.name;
+    $('wm-filename').textContent = name;
     $('wm-info').textContent = `共 ${pageCount} 頁`;
     $('wm-export').disabled = false;
+    // 換檔案時把頁面範圍重設回「全部」，免得沿用上一份的設定漏蓋
+    $('wm-range').value = ''; S.range = '';
+    $('wm-range-mode').querySelector('[data-v="all"]').click();
     schedule();
+  }
+  TOOLBOX.watermark = loadBytes;
+  async function load(files){
+    const f = files.find(isPdf); if(!f) return;
+    await loadBytes(f.name, new Uint8Array(await f.arrayBuffer()));
   }
   const targets = () => (S.rangeMode==='all'||!S.range.trim())
     ? new Set(Array.from({length:pageCount},(_,i)=>i)) : parseRange(S.range, pageCount);
@@ -920,15 +961,20 @@ $('foot').textContent = '光田 PDF 小幫手 — 所有處理都在你的瀏覽
 
   bindDrop($('pn-drop'), $('pn-input'), load);
   bindPanelDrop('task-pagenum', load);
-  async function load(files){
-    const f = files.find(isPdf); if(!f) return;
-    bytes = new Uint8Array(await f.arrayBuffer()); name = f.name;
+  async function loadBytes(fname, buf){
+    bytes = buf instanceof Uint8Array ? buf : new Uint8Array(buf);
+    name = fname;
     const d = await pdfjsLib.getDocument({data:bytes.slice()}).promise;
     total = d.numPages; d.destroy();
-    $('pn-filename').textContent = f.name;
+    $('pn-filename').textContent = fname;
     $('pn-export').disabled = false;
     $('pn-info').textContent = `共 ${total} 頁`;
     schedule();
+  }
+  TOOLBOX.pagenum = loadBytes;
+  async function load(files){
+    const f = files.find(isPdf); if(!f) return;
+    await loadBytes(f.name, new Uint8Array(await f.arrayBuffer()));
   }
   function label(num, tot){
     switch(S.format){
