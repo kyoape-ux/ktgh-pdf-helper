@@ -176,7 +176,11 @@ fieldset:disabled{opacity:.42}
 
 /* ── 兩欄版面 ── */
 .split{display:grid; grid-template-columns:336px 1fr; gap:22px; align-items:start}
-@media(max-width:900px){.split{grid-template-columns:1fr}}
+.split-batch{grid-template-columns:minmax(0,1fr) 400px}
+@media(max-width:900px){.split,.split-batch{grid-template-columns:1fr}}
+.fileitem.pv{border-color:var(--accent); background:var(--soft)}
+.fileitem.clickable{cursor:pointer}
+.fileitem.clickable:hover{border-color:var(--accent2)}
 .previewbox{border:1px solid var(--line); border-radius:11px; background:#eef1f5; min-height:430px; display:flex; align-items:center; justify-content:center; padding:16px}
 .previewbox canvas{max-width:100%; max-height:660px; box-shadow:0 2px 10px rgba(0,0,0,.2)}
 .previewbox .ph{color:var(--ink2); font-size:13.5px; text-align:center; line-height:1.8}
@@ -232,6 +236,9 @@ footer{
   <div class="taskhead">
     <button class="back"><svg viewBox="0 0 24 24"><path d="M19 12H5m0 0 7-7m-7 7 7 7"/></svg></button>
     <div><h2>合併與整理 PDF</h2><div class="sub">多份檔案合成一份，拖拉調順序、刪頁、旋轉、插空白頁　·　可放入 <b>PDF、JPG、PNG</b></div></div>
+  </div>
+  <div class="note info" style="margin:-4px 0 16px">
+    合併完成後，除了直接下載，也可以按右上角的<b>「接著加浮水印」</b>或<b>「接著加頁碼」</b>繼續處理——檔案會自動帶到下一個工具，不必先下載再重新上傳。
   </div>
   <div class="panel">
     <div class="toolbar">
@@ -291,15 +298,16 @@ footer{
 
       <div class="subcard">
         <h3><input type="checkbox" id="wm-img-on">圖片浮水印（院徽 / Logo）</h3>
-        <fieldset id="wm-img-fields" disabled>
-          <div class="field">
-            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-              <button class="btn" id="wm-img-default">用光田院徽</button>
-              <button class="btn" id="wm-img-pick">改用其他圖片</button>
-            </div>
-            <div class="logoprev" id="wm-img-prev"><img id="wm-img-thumb" alt=""></div>
-            <input type="file" id="wm-img-input" accept="image/png,image/jpeg" hidden>
+        <!-- 選圖按鈕放在 fieldset 外，否則 disabled 狀態下按鈕點不動 -->
+        <div class="field">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <button class="btn" id="wm-img-default">用光田院徽</button>
+            <button class="btn" id="wm-img-pick">改用其他圖片</button>
           </div>
+          <div class="logoprev" id="wm-img-prev"><img id="wm-img-thumb" alt=""></div>
+          <input type="file" id="wm-img-input" accept="image/png,image/jpeg" hidden>
+        </div>
+        <fieldset id="wm-img-fields" disabled>
           <div class="field"><label>色彩</label>
             <div class="seg" id="wm-img-tone">
               <button data-v="orig" class="active">原色</button>
@@ -349,7 +357,9 @@ footer{
     </div>
     <input type="file" id="bt-input" accept=".pdf" multiple hidden>
 
-    <div class="subcard" id="bt-preset" style="margin-top:16px">
+    <div class="split split-batch" style="margin-top:16px"><div>
+
+    <div class="subcard" id="bt-preset">
       <h3><input type="checkbox" id="bt-sop" checked>SOP 預設（光田院徽 ＋ 文件管制專用章）</h3>
       <p class="hint" id="bt-sop-hint">
         比照現行 SOP 公文規格：院徽以 70% 頁寬置中、20% 淡度，文件管制專用章蓋右下角，兩者每一頁都蓋。橫式頁面會自動按比例縮放。
@@ -374,16 +384,57 @@ footer{
       </div>
     </div>
 
-    <div class="subcard" id="bt-custom" style="display:none">
-      <h3>自訂文字浮水印</h3>
-      <div class="row2">
-        <div class="field"><label>文字內容</label><input type="text" id="bt-text" value="光田綜合醫院"></div>
-        <div class="field"><label>不透明度<span class="rangeval" id="bt-op-v">15%</span></label><input type="range" id="bt-op" min="4" max="60" value="15"></div>
+    <div id="bt-custom" style="display:none">
+      <div class="subcard">
+        <h3><input type="checkbox" id="bt-txt-on" checked>文字浮水印</h3>
+        <fieldset id="bt-txt-fields">
+          <div class="row2">
+            <div class="field"><label>文字內容</label><input type="text" id="bt-text" value="光田綜合醫院"></div>
+            <div class="field"><label>不透明度<span class="rangeval" id="bt-op-v">15%</span></label><input type="range" id="bt-op" min="4" max="60" value="15"></div>
+          </div>
+          <div class="row2" style="margin-bottom:0">
+            <div class="field" style="margin-bottom:0"><label>字級<span class="rangeval" id="bt-size-v">48 pt</span></label><input type="range" id="bt-size" min="12" max="120" value="48"></div>
+            <div class="field" style="margin-bottom:0"><label>角度<span class="rangeval" id="bt-ang-v">45°</span></label><input type="range" id="bt-ang" min="0" max="90" value="45"></div>
+          </div>
+        </fieldset>
       </div>
-      <div class="field" style="margin-bottom:0"><label>字級<span class="rangeval" id="bt-size-v">48 pt</span></label><input type="range" id="bt-size" min="12" max="120" value="48"></div>
+      <div class="subcard">
+        <h3><input type="checkbox" id="bt-img-on">圖片浮水印</h3>
+        <!-- 選圖按鈕放在 fieldset 外：disabled 的 fieldset 會讓內部按鈕失效，
+             按鈕若在裡面就永遠點不到，變成必須先勾選才能選圖的死結 -->
+        <div class="field">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <button class="btn" id="bt-img-logo">用光田院徽</button>
+            <button class="btn" id="bt-img-pick">上傳圖片</button>
+          </div>
+          <div class="logoprev" id="bt-img-prev"><img id="bt-img-thumb" alt=""></div>
+          <input type="file" id="bt-img-input" accept="image/png,image/jpeg" hidden>
+        </div>
+        <fieldset id="bt-img-fields" disabled>
+          <div class="row2">
+            <div class="field"><label>位置</label>
+              <div class="posgrid" id="bt-img-pos">
+                <button data-v="tl"></button><button data-v="tc"></button><button data-v="tr"></button>
+                <button data-v="ml"></button><button data-v="mc" class="active"></button><button data-v="mr"></button>
+                <button data-v="bl"></button><button data-v="bc"></button><button data-v="br"></button>
+              </div>
+            </div>
+            <div>
+              <div class="field"><label>大小（相對頁寬）<span class="rangeval" id="bt-imgsc-v">40%</span></label><input type="range" id="bt-imgsc" min="5" max="100" value="40"></div>
+              <div class="field" style="margin-bottom:0"><label>不透明度<span class="rangeval" id="bt-imgop-v">20%</span></label><input type="range" id="bt-imgop" min="4" max="100" value="20"></div>
+            </div>
+          </div>
+          <div class="field" style="margin:12px 0 0"><label>色彩</label>
+            <div class="seg" id="bt-img-tone">
+              <button data-v="orig" class="active">原色</button>
+              <button data-v="gray">黑白</button>
+            </div>
+          </div>
+        </fieldset>
+      </div>
     </div>
 
-    <div class="subcard">
+    <div class="subcard" style="margin-bottom:0">
       <h3>輸出方式</h3>
       <div class="field" style="margin-bottom:0">
         <div class="seg" id="bt-out">
@@ -392,6 +443,13 @@ footer{
         </div>
       </div>
     </div>
+
+    </div><div>
+      <div class="previewbox" id="bt-preview">
+        <span class="ph">載入檔案後，這裡會顯示蓋章後的樣子<br>可點下方清單切換要預覽的檔案</span>
+      </div>
+      <p class="hint" style="margin-top:10px" id="bt-pv-info"></p>
+    </div></div>
 
     <div class="toolbar" style="margin:16px 0 0">
       <span class="hint" id="bt-count"></span>
@@ -702,7 +760,7 @@ async function fileToImagePage(doc, file){
 /* ═══════════════ 路由 ═══════════════ */
 const TOOLS = [
   {id:'organize', title:'合併與整理 PDF', c:'#0e7490', bg:'#e0f2f8',
-   desc:'多份檔案合成一份，拖拉調順序、刪頁、旋轉、插入空白頁。圖片也能直接加進來變成頁面。',
+   desc:'多份檔案合成一份，拖拉調順序、刪頁、旋轉、插入空白頁，圖片也能直接加進來變成頁面。<b>合併完可以接著加浮水印或頁碼</b>，不必先下載再重新上傳。',
    icon:'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>'},
   {id:'watermark', title:'加浮水印', c:'#7048b6', bg:'#efe8f9',
    desc:'蓋上「光田綜合醫院」等文字，或院徽 Logo 圖片。位置、角度、透明度都能調，即時預覽。',
@@ -754,7 +812,7 @@ function showHome(){
 document.querySelectorAll('.back').forEach(b=>b.addEventListener('click', showHome));
 $('brand').addEventListener('click', showHome);
 
-const VERSION = 'v2.4（2026-08-27）';
+const VERSION = 'v2.6（2026-08-27）';
 buildCards();
 $('foot').textContent = `光田 PDF 工具站 ${VERSION} — 所有處理都在你的瀏覽器完成，檔案不會上傳到任何伺服器，關掉分頁就沒了`;
 
@@ -1152,8 +1210,30 @@ $('foot').textContent = `光田 PDF 工具站 ${VERSION} — 所有處理都在�
     logo:{url:'assets/ktgh-logo.png', widthPct:0.70, opacity:0.20},
     seal:{url:'assets/ktgh-seal.png', widthPct:0.227, marginRightPct:0.0122, marginBottomPct:0.0072, opacity:1},
   };
+  /* 蓋章座標只算這一份，預覽與實際輸出共用，確保所見即所得
+     回傳 PDF 座標系（原點在左下） */
+  function sopGeom(pw, ph, logo, seal){
+    const lw=pw*SOP.logo.widthPct, lh=lw*logo.h/logo.w;
+    const sw=pw*SOP.seal.widthPct, sh=sw*seal.h/seal.w;
+    return {
+      logo:{x:(pw-lw)/2, y:(ph-lh)/2, w:lw, h:lh, opacity:SOP.logo.opacity},
+      seal:{x:pw-sw-pw*SOP.seal.marginRightPct, y:pw*SOP.seal.marginBottomPct, w:sw, h:sh, opacity:SOP.seal.opacity},
+    };
+  }
+  /* 自訂圖片的九宮格位置，同樣由預覽與輸出共用 */
+  function userImgGeom(pw, ph, dim){
+    const w=pw*S.imgScale/100, h=w*dim.h/dim.w, M=24;
+    const xs={l:M, c:(pw-w)/2, r:pw-w-M}, ys={t:ph-h-M, m:(ph-h)/2, b:M};
+    return {x:xs[S.imgPos[1]], y:ys[S.imgPos[0]], w, h, opacity:S.imgOp/100};
+  }
   let files=[], rows=[], busy=false;
-  const S={sop:true, logoScope:'all', sealScope:'all', out:'each', text:'光田綜合醫院', op:15, size:48};
+  let pvIndex=0, pvTimer=null, pvBusy=false, pvDirty=false;
+  const pvCache=new Map();     // 檔案索引 → 已渲染的原始頁面 canvas
+  const imgEl={};              // 院徽與印章的 HTMLImageElement
+  const S={sop:true, logoScope:'all', sealScope:'all', out:'each',
+           txtOn:true, text:'光田綜合醫院', op:15, size:48, ang:45,
+           imgOn:false, imgPos:'mc', imgScale:40, imgOp:20, imgTone:'orig'};
+  let userImg=null, userImgBytes=null;   // 自訂圖片(HTMLImageElement 與處理後的 PNG bytes)
   const cache={};
 
   const fetchBytes = async url => { if(!cache[url]) cache[url]=new Uint8Array(await (await fetch(url)).arrayBuffer()); return cache[url]; };
@@ -1165,35 +1245,162 @@ $('foot').textContent = `光田 PDF 工具站 ${VERSION} — 所有處理都在�
     if(!pdfs.length) return;
     files.push(...pdfs);
     render();
+    schedulePv();
   }
   function render(){
     const box=$('bt-list'); box.innerHTML=''; rows=[];
-    files.forEach(f=>{
-      const row=document.createElement('div'); row.className='fileitem';
+    files.forEach((f,idx)=>{
+      const row=document.createElement('div');
+      row.className='fileitem clickable'+(idx===pvIndex?' pv':'');
+      row.title='點一下預覽這份檔案';
       const n=document.createElement('span'); n.className='name'; n.textContent=f.name;
       const sz=document.createElement('span'); sz.className='pg';
       sz.textContent = f.size>1048576 ? (f.size/1048576).toFixed(1)+' MB' : Math.round(f.size/1024)+' KB';
       const st=document.createElement('span'); st.className='status wait'; st.textContent='等待中';
       row.append(n,sz,st); box.appendChild(row); rows.push(st);
+      row.addEventListener('click', ()=>{
+        if(busy || pvIndex===idx) return;
+        pvIndex=idx;
+        box.querySelectorAll('.fileitem').forEach((r,i)=>r.classList.toggle('pv', i===idx));
+        schedulePv();
+      });
     });
     $('bt-count').textContent = files.length ? `已選 ${files.length} 份檔案` : '';
     $('bt-run').disabled = !files.length || busy;
     $('bt-clear').disabled = !files.length || busy;
   }
-  $('bt-clear').addEventListener('click', ()=>{ files=[]; render(); $('bt-prog').style.display='none'; });
+  $('bt-clear').addEventListener('click', ()=>{
+    files=[]; pvIndex=0; pvCache.clear(); render();
+    $('bt-prog').style.display='none';
+    $('bt-preview').innerHTML='<span class="ph">載入檔案後，這裡會顯示蓋章後的樣子<br>可點下方清單切換要預覽的檔案</span>';
+    $('bt-pv-info').textContent='';
+  });
+
+  /* ── 預覽：把原始第一頁畫成 canvas 後疊上章，與輸出共用同一組座標 ── */
+  const schedulePv = () => { clearTimeout(pvTimer); pvTimer=setTimeout(drawPv, 180); };
+  async function basePage(idx){
+    if(pvCache.has(idx)) return pvCache.get(idx);
+    const doc=await pdfjsLib.getDocument({data:new Uint8Array(await files[idx].arrayBuffer())}).promise;
+    const pg=await doc.getPage(1);
+    const b=pg.getViewport({scale:1});
+    const vp=pg.getViewport({scale: Math.min(760/b.width, 1000/b.height)});
+    const c=document.createElement('canvas'); c.width=vp.width; c.height=vp.height;
+    const ctx=c.getContext('2d'); ctx.fillStyle='#fff'; ctx.fillRect(0,0,c.width,c.height);
+    await pg.render({canvasContext:ctx, viewport:vp, intent:'print'}).promise;
+    const info={canvas:c, pw:b.width, ph:b.height, scale:vp.width/b.width, pages:doc.numPages};
+    doc.destroy();
+    pvCache.set(idx, info);
+    return info;
+  }
+  const needImg = async key => {
+    if(!imgEl[key]){
+      const url = key==='logo'?SOP.logo.url:SOP.seal.url;
+      imgEl[key]=await new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=url; });
+    }
+    return imgEl[key];
+  };
+  async function drawPv(){
+    if(!files.length) return;
+    if(pvBusy){ pvDirty=true; return; }
+    pvBusy=true;
+    try{
+      const idx=Math.min(pvIndex, files.length-1);
+      const base=await basePage(idx);
+      const out=document.createElement('canvas');
+      out.width=base.canvas.width; out.height=base.canvas.height;
+      const ctx=out.getContext('2d');
+      ctx.drawImage(base.canvas,0,0);
+      const k=base.scale;
+      // PDF 座標原點在左下，canvas 在左上，y 要翻轉
+      const put=(img,g)=>{
+        ctx.globalAlpha=g.opacity;
+        ctx.drawImage(img, g.x*k, (base.ph-g.y-g.h)*k, g.w*k, g.h*k);
+        ctx.globalAlpha=1;
+      };
+      if(S.sop){
+        const lo=await needImg('logo'), se=await needImg('seal');
+        const dim={w:lo.naturalWidth,h:lo.naturalHeight}, sdim={w:se.naturalWidth,h:se.naturalHeight};
+        const g=sopGeom(base.pw, base.ph, dim, sdim);
+        if(S.logoScope!=='none') put(lo, g.logo);
+        if(S.sealScope!=='none') put(se, g.seal);
+      }else{
+        if(S.txtOn && S.text.trim()){
+          const sp=await textSprite(S.text.trim(), S.size, '#888888');
+          const im=await new Promise(r=>{ const i=new Image(); i.onload=()=>r(i); i.src=URL.createObjectURL(new Blob([sp.bytes],{type:'image/png'})); });
+          ctx.save(); ctx.globalAlpha=S.op/100;
+          ctx.translate(base.pw*k/2, base.ph*k/2); ctx.rotate(-S.ang*Math.PI/180);
+          ctx.drawImage(im, -sp.wPt*k/2, -sp.hPt*k/2, sp.wPt*k, sp.hPt*k);
+          ctx.restore(); ctx.globalAlpha=1;
+        }
+        if(S.imgOn && userImg){
+          put(userImg, userImgGeom(base.pw, base.ph, {w:userImg.naturalWidth, h:userImg.naturalHeight}));
+        }
+      }
+      $('bt-preview').innerHTML=''; $('bt-preview').appendChild(out);
+      const scopeTxt = s => s==='all'?'每頁':s==='first'?'僅首頁':'不蓋';
+      $('bt-pv-info').textContent = S.sop
+        ? `預覽：${files[idx].name}　第 1 頁（共 ${base.pages} 頁）　·　院徽${scopeTxt(S.logoScope)}、管制章${scopeTxt(S.sealScope)}`
+        : `預覽：${files[idx].name}　第 1 頁（共 ${base.pages} 頁）　·　自訂文字浮水印`;
+    }catch(e){ $('bt-pv-info').textContent='預覽失敗：'+e.message; }
+    pvBusy=false;
+    if(pvDirty){ pvDirty=false; drawPv(); }
+  }
 
   $('bt-sop').addEventListener('change', e=>{
     S.sop=e.target.checked;
     $('bt-sop-opts').style.display = S.sop?'grid':'none';
     $('bt-sop-hint').style.display = S.sop?'block':'none';
     $('bt-custom').style.display = S.sop?'none':'block';
+    schedulePv();
   });
-  bindSeg($('bt-logo-scope'), v=>S.logoScope=v);
-  bindSeg($('bt-seal-scope'), v=>S.sealScope=v);
+  bindSeg($('bt-logo-scope'), v=>{ S.logoScope=v; schedulePv(); });
+  bindSeg($('bt-seal-scope'), v=>{ S.sealScope=v; schedulePv(); });
   bindSeg($('bt-out'), v=>S.out=v);
-  $('bt-text').addEventListener('input', e=>S.text=e.target.value);
-  $('bt-op').addEventListener('input', e=>{ S.op=+e.target.value; $('bt-op-v').textContent=e.target.value+'%'; });
-  $('bt-size').addEventListener('input', e=>{ S.size=+e.target.value; $('bt-size-v').textContent=e.target.value+' pt'; });
+  $('bt-text').addEventListener('input', e=>{ S.text=e.target.value; schedulePv(); });
+  [['bt-op','op',v=>v+'%'],['bt-size','size',v=>v+' pt'],['bt-ang','ang',v=>v+'°'],
+   ['bt-imgsc','imgScale',v=>v+'%'],['bt-imgop','imgOp',v=>v+'%']].forEach(([id,k,fmt])=>{
+    $(id).addEventListener('input', e=>{ S[k]=+e.target.value; $(id+'-v').textContent=fmt(e.target.value); schedulePv(); });
+  });
+  $('bt-txt-on').addEventListener('change', e=>{ S.txtOn=e.target.checked; $('bt-txt-fields').disabled=!S.txtOn; schedulePv(); });
+  $('bt-img-on').addEventListener('change', e=>{ S.imgOn=e.target.checked; $('bt-img-fields').disabled=!S.imgOn; schedulePv(); });
+  bindSeg($('bt-img-pos'), v=>{ S.imgPos=v; schedulePv(); });
+  bindSeg($('bt-img-tone'), v=>{ S.imgTone=v; refreshUserImg(); });
+
+  /* 自訂圖片：套用色彩模式後產出 PNG，預覽與輸出共用同一份 */
+  async function refreshUserImg(){
+    if(!userImg){ schedulePv(); return; }
+    const c=document.createElement('canvas');
+    c.width=userImg.naturalWidth; c.height=userImg.naturalHeight;
+    const ctx=c.getContext('2d'); ctx.drawImage(userImg,0,0);
+    if(S.imgTone==='gray'){
+      const id=ctx.getImageData(0,0,c.width,c.height), d=id.data;
+      for(let i=0;i<d.length;i+=4){
+        if(d[i+3]===0) continue;
+        const l=0.299*d[i]+0.587*d[i+1]+0.114*d[i+2]; d[i]=d[i+1]=d[i+2]=l;
+      }
+      ctx.putImageData(id,0,0);
+    }
+    $('bt-img-thumb').src=c.toDataURL('image/png');
+    const blob=await new Promise(r=>c.toBlob(r,'image/png'));
+    userImgBytes=new Uint8Array(await blob.arrayBuffer());
+    // 預覽要用套色後的版本
+    userImg=await new Promise(r=>{ const i=new Image(); i.onload=()=>r(i); i.src=$('bt-img-thumb').src; });
+    schedulePv();
+  }
+  const enableUserImg=()=>{ if(!S.imgOn){ $('bt-img-on').checked=true; S.imgOn=true; $('bt-img-fields').disabled=false; } };
+  $('bt-img-logo').addEventListener('click', async ()=>{
+    userImg=await new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=SOP.logo.url; });
+    enableUserImg(); await refreshUserImg();
+  });
+  $('bt-img-pick').addEventListener('click', ()=>$('bt-img-input').click());
+  $('bt-img-input').addEventListener('change', async e=>{
+    const f=e.target.files[0]; if(!f) return;
+    const url=URL.createObjectURL(f);
+    userImg=await new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=url; });
+    setTimeout(()=>URL.revokeObjectURL(url),3000);
+    enableUserImg(); await refreshUserImg();
+    e.target.value='';
+  });
 
   const scopeSet=(scope,n)=> scope==='none'?[] : scope==='first'?[0] : Array.from({length:n},(_,i)=>i);
 
@@ -1204,29 +1411,38 @@ $('foot').textContent = `光田 PDF 工具站 ${VERSION} — 所有處理都在�
     if(S.sop){
       const logoImg = S.logoScope!=='none' ? await doc.embedPng(await fetchBytes(SOP.logo.url)) : null;
       const sealImg = S.sealScope!=='none' ? await doc.embedPng(await fetchBytes(SOP.seal.url)) : null;
+      const dims={ logo:logoImg?{w:logoImg.width,h:logoImg.height}:null,
+                   seal:sealImg?{w:sealImg.width,h:sealImg.height}:null };
       for(const i of scopeSet(S.logoScope, pages.length)){
         const p=pages[i]; if(!p) continue;
         const {width:w, height:h}=p.getSize();
-        const iw=w*SOP.logo.widthPct, ih=iw*logoImg.height/logoImg.width;
-        p.drawImage(logoImg, {x:(w-iw)/2, y:(h-ih)/2, width:iw, height:ih, opacity:SOP.logo.opacity});
+        const g=sopGeom(w,h,dims.logo,dims.seal||dims.logo).logo;
+        p.drawImage(logoImg, {x:g.x, y:g.y, width:g.w, height:g.h, opacity:g.opacity});
       }
       for(const i of scopeSet(S.sealScope, pages.length)){
         const p=pages[i]; if(!p) continue;
-        const {width:w}=p.getSize();
-        const iw=w*SOP.seal.widthPct, ih=iw*sealImg.height/sealImg.width;
-        p.drawImage(sealImg, {x:w-iw-w*SOP.seal.marginRightPct, y:w*SOP.seal.marginBottomPct,
-          width:iw, height:ih, opacity:SOP.seal.opacity});
+        const {width:w, height:h}=p.getSize();
+        const g=sopGeom(w,h,dims.logo||dims.seal,dims.seal).seal;
+        p.drawImage(sealImg, {x:g.x, y:g.y, width:g.w, height:g.h, opacity:g.opacity});
       }
     }else{
       const txt=S.text.trim();
-      if(txt){
+      if(S.txtOn && txt){
         const sp=await textSprite(txt, S.size, '#888888');
         const img=await doc.embedPng(sp.bytes);
-        const rad=45*Math.PI/180, cos=Math.cos(rad), sin=Math.sin(rad);
+        const rad=S.ang*Math.PI/180, cos=Math.cos(rad), sin=Math.sin(rad);
         for(const p of pages){
           const {width:w, height:h}=p.getSize();
           p.drawImage(img, {x:w/2-(sp.wPt*cos-sp.hPt*sin)/2, y:h/2-(sp.wPt*sin+sp.hPt*cos)/2,
-            width:sp.wPt, height:sp.hPt, opacity:S.op/100, rotate:degrees(45)});
+            width:sp.wPt, height:sp.hPt, opacity:S.op/100, rotate:degrees(S.ang)});
+        }
+      }
+      if(S.imgOn && userImgBytes){
+        const img=await doc.embedPng(userImgBytes);
+        for(const p of pages){
+          const {width:w, height:h}=p.getSize();
+          const g=userImgGeom(w,h,{w:img.width,h:img.height});
+          p.drawImage(img, {x:g.x, y:g.y, width:g.w, height:g.h, opacity:g.opacity});
         }
       }
     }
