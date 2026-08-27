@@ -386,8 +386,8 @@ footer{
 
     <div id="bt-custom" style="display:none">
       <div class="subcard">
-        <h3><input type="checkbox" id="bt-txt-on" checked>文字浮水印</h3>
-        <fieldset id="bt-txt-fields">
+        <h3><input type="checkbox" id="bt-txt-on">文字浮水印</h3>
+        <fieldset id="bt-txt-fields" disabled>
           <div class="row2">
             <div class="field"><label>文字內容</label><input type="text" id="bt-text" value="光田綜合醫院"></div>
             <div class="field"><label>不透明度<span class="rangeval" id="bt-op-v">15%</span></label><input type="range" id="bt-op" min="4" max="60" value="15"></div>
@@ -812,7 +812,7 @@ function showHome(){
 document.querySelectorAll('.back').forEach(b=>b.addEventListener('click', showHome));
 $('brand').addEventListener('click', showHome);
 
-const VERSION = 'v2.6（2026-08-27）';
+const VERSION = 'v2.7（2026-08-27）';
 buildCards();
 $('foot').textContent = `光田 PDF 工具站 ${VERSION} — 所有處理都在你的瀏覽器完成，檔案不會上傳到任何伺服器，關掉分頁就沒了`;
 
@@ -1231,7 +1231,7 @@ $('foot').textContent = `光田 PDF 工具站 ${VERSION} — 所有處理都在�
   const pvCache=new Map();     // 檔案索引 → 已渲染的原始頁面 canvas
   const imgEl={};              // 院徽與印章的 HTMLImageElement
   const S={sop:true, logoScope:'all', sealScope:'all', out:'each',
-           txtOn:true, text:'光田綜合醫院', op:15, size:48, ang:45,
+           txtOn:false, text:'光田綜合醫院', op:15, size:48, ang:45,
            imgOn:false, imgPos:'mc', imgScale:40, imgOp:20, imgTone:'orig'};
   let userImg=null, userImgBytes=null;   // 自訂圖片(HTMLImageElement 與處理後的 PNG bytes)
   const cache={};
@@ -1266,8 +1266,17 @@ $('foot').textContent = `光田 PDF 工具站 ${VERSION} — 所有處理都在�
       });
     });
     $('bt-count').textContent = files.length ? `已選 ${files.length} 份檔案` : '';
-    $('bt-run').disabled = !files.length || busy;
     $('bt-clear').disabled = !files.length || busy;
+    updateRun();
+  }
+  /* 什麼都沒選就跑，只會產出一堆沒變化的檔案 —— 先擋下並說明原因 */
+  const hasWork = () => S.sop
+    ? (S.logoScope!=='none' || S.sealScope!=='none')
+    : ((S.txtOn && S.text.trim()) || (S.imgOn && userImgBytes));
+  function updateRun(){
+    const ok = files.length && hasWork() && !busy;
+    $('bt-run').disabled = !ok;
+    $('bt-run').title = files.length && !hasWork() ? '請先勾選要加的浮水印或印章' : '';
   }
   $('bt-clear').addEventListener('click', ()=>{
     files=[]; pvIndex=0; pvCache.clear(); render();
@@ -1338,9 +1347,16 @@ $('foot').textContent = `光田 PDF 工具站 ${VERSION} — 所有處理都在�
       }
       $('bt-preview').innerHTML=''; $('bt-preview').appendChild(out);
       const scopeTxt = s => s==='all'?'每頁':s==='first'?'僅首頁':'不蓋';
-      $('bt-pv-info').textContent = S.sop
-        ? `預覽：${files[idx].name}　第 1 頁（共 ${base.pages} 頁）　·　院徽${scopeTxt(S.logoScope)}、管制章${scopeTxt(S.sealScope)}`
-        : `預覽：${files[idx].name}　第 1 頁（共 ${base.pages} 頁）　·　自訂文字浮水印`;
+      let what;
+      if(S.sop) what = `院徽${scopeTxt(S.logoScope)}、管制章${scopeTxt(S.sealScope)}`;
+      else{
+        const on=[];
+        if(S.txtOn && S.text.trim()) on.push('文字浮水印');
+        if(S.imgOn && userImgBytes) on.push('圖片浮水印');
+        what = on.length ? on.join(' ＋ ') : '尚未選擇要加什麼，目前顯示原始文件';
+      }
+      $('bt-pv-info').textContent = `預覽：${files[idx].name}　第 1 頁（共 ${base.pages} 頁）　·　${what}`;
+      updateRun();
     }catch(e){ $('bt-pv-info').textContent='預覽失敗：'+e.message; }
     pvBusy=false;
     if(pvDirty){ pvDirty=false; drawPv(); }
@@ -1489,7 +1505,7 @@ $('foot').textContent = `光田 PDF 工具站 ${VERSION} — 所有處理都在�
         else if(zip.length) downloadBlob(makeZip(zip), `SOP蓋章_${zip.length}份.zip`);
       }
     }catch(e){ alert('批次處理失敗：'+e.message); }
-    busy=false; $('bt-run').disabled=false; $('bt-clear').disabled=false;
+    busy=false; $('bt-clear').disabled=false; updateRun();
   });
 
   /* ── 精簡 ZIP 打包（store 模式，PDF 本身已壓縮不需再壓）── */
