@@ -181,6 +181,18 @@ fieldset:disabled{opacity:.42}
 .previewbox canvas{max-width:100%; max-height:660px; box-shadow:0 2px 10px rgba(0,0,0,.2)}
 .previewbox .ph{color:var(--ink2); font-size:13.5px; text-align:center; line-height:1.8}
 
+/* ── 批次清單與進度 ── */
+.filelist{margin-top:16px; display:flex; flex-direction:column; gap:7px; max-height:340px; overflow-y:auto}
+.fileitem{display:flex; align-items:center; gap:12px; border:1px solid var(--line); border-radius:9px; padding:9px 13px; font-size:13.3px; background:#fff}
+.fileitem .name{flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.fileitem .pg{font-size:12px; color:var(--ink3); white-space:nowrap}
+.status{font-size:12.3px; padding:3px 11px; border-radius:20px; white-space:nowrap}
+.status.wait{background:#eef1f5; color:var(--ink2)}
+.status.busy{background:#fdf6e3; color:var(--warn)}
+.status.done{background:#e5f3ec; color:var(--ok)}
+.status.fail{background:#fbecea; color:var(--err)}
+.prog{height:7px; background:#e3e9ef; border-radius:4px; overflow:hidden; margin-top:14px}
+.prog .bar{height:100%; width:0; background:linear-gradient(90deg,#137a9c,#0d5064); transition:width .2s}
 .steps{counter-reset:s; margin:6px 0 0}
 .steps li{list-style:none; counter-increment:s; position:relative; padding-left:30px; margin-bottom:11px; font-size:13.4px; line-height:1.7}
 .steps li::before{
@@ -322,6 +334,76 @@ footer{
       <p class="hint" style="margin-top:10px" id="wm-info"></p>
     </div>
   </div></div>
+</section>
+
+<!-- ══════════ 批次浮水印 ══════════ -->
+<section class="task" id="task-batch">
+  <div class="taskhead">
+    <button class="back"><svg viewBox="0 0 24 24"><path d="M19 12H5m0 0 7-7m-7 7 7 7"/></svg></button>
+    <div><h2>批次浮水印</h2><div class="sub">一次處理多份檔案，統一蓋章後打包下載　·　可放入 <b>PDF</b></div></div>
+  </div>
+  <div class="panel">
+    <div class="dropzone" id="bt-drop" style="padding:26px">
+      <strong>把多份 PDF 拖進來，或點一下選檔</strong>
+      <small>可一次選 20 份以上。每份各自蓋章，處理完打包成一個 ZIP 下載。</small>
+    </div>
+    <input type="file" id="bt-input" accept=".pdf" multiple hidden>
+
+    <div class="subcard" id="bt-preset" style="margin-top:16px">
+      <h3><input type="checkbox" id="bt-sop" checked>SOP 預設（光田院徽 ＋ 文件管制專用章）</h3>
+      <p class="hint" id="bt-sop-hint">
+        比照現行公文規格：院徽以 70% 頁寬置中、20% 淡度蓋滿每一頁；文件管制專用章蓋在右下角。
+      </p>
+      <div class="row2" id="bt-sop-opts" style="margin-top:12px">
+        <div class="field" style="margin-bottom:0">
+          <label>院徽套用範圍</label>
+          <div class="seg" id="bt-logo-scope">
+            <button data-v="all" class="active">每一頁</button>
+            <button data-v="first">只有第一頁</button>
+            <button data-v="none">不蓋</button>
+          </div>
+        </div>
+        <div class="field" style="margin-bottom:0">
+          <label>管制章套用範圍</label>
+          <div class="seg" id="bt-seal-scope">
+            <button data-v="first" class="active">只有第一頁</button>
+            <button data-v="all">每一頁</button>
+            <button data-v="none">不蓋</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="subcard" id="bt-custom" style="display:none">
+      <h3>自訂文字浮水印</h3>
+      <div class="row2">
+        <div class="field"><label>文字內容</label><input type="text" id="bt-text" value="光田綜合醫院"></div>
+        <div class="field"><label>不透明度<span class="rangeval" id="bt-op-v">15%</span></label><input type="range" id="bt-op" min="4" max="60" value="15"></div>
+      </div>
+      <div class="field" style="margin-bottom:0"><label>字級<span class="rangeval" id="bt-size-v">48 pt</span></label><input type="range" id="bt-size" min="12" max="120" value="48"></div>
+    </div>
+
+    <div class="subcard">
+      <h3>輸出方式</h3>
+      <div class="field" style="margin-bottom:0">
+        <div class="seg" id="bt-out">
+          <button data-v="each" class="active">每份各自輸出</button>
+          <button data-v="merge">先合併成一份再蓋章</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="toolbar" style="margin:16px 0 0">
+      <span class="hint" id="bt-count"></span>
+      <div class="spacer"></div>
+      <button class="btn" id="bt-clear" disabled>清空清單</button>
+      <button class="btn primary" id="bt-run" disabled>
+        <svg viewBox="0 0 24 24"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 21h16"/></svg>開始批次處理
+      </button>
+    </div>
+    <div class="prog" id="bt-prog" style="display:none"><div class="bar" id="bt-bar"></div></div>
+    <div class="filelist" id="bt-list"></div>
+  </div>
 </section>
 
 <!-- ══════════ 拆分 ══════════ -->
@@ -625,6 +707,9 @@ const TOOLS = [
   {id:'watermark', title:'加浮水印', c:'#7048b6', bg:'#efe8f9',
    desc:'蓋上「光田綜合醫院」等文字，或院徽 Logo 圖片。位置、角度、透明度都能調，即時預覽。',
    icon:'<path d="M12 3.5a3 3 0 0 1 3 3c0 1.9-1.3 2.6-1.3 4.5h-3.4c0-1.9-1.3-2.6-1.3-4.5a3 3 0 0 1 3-3z"/><path d="M8 11h8a2 2 0 0 1 2 2v2.5H6V13a2 2 0 0 1 2-2z"/><path d="M6 19.5h12"/>'},
+  {id:'batch', title:'批次浮水印', tag:'SOP', c:'#8a3fa0', bg:'#f3e8f7',
+   desc:'一次處理多份檔案。勾選 SOP 預設就自動蓋上光田院徽與文件管制專用章，位置比照現行公文規格，打包成 ZIP 下載。',
+   icon:'<rect x="7" y="3" width="14" height="14" rx="2"/><path d="M17 17v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h2"/>'},
   {id:'split', title:'拆分 PDF', c:'#c2621e', bg:'#faeddf',
    desc:'從一份文件裡挑出需要的頁面，另存成新的 PDF。點縮圖或輸入頁碼都可以。',
    icon:'<path d="M8 3H5a2 2 0 0 0-2 2v3m0 8v3a2 2 0 0 0 2 2h3m8-18h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3"/><path d="M12 3v18"/>'},
@@ -669,7 +754,7 @@ function showHome(){
 document.querySelectorAll('.back').forEach(b=>b.addEventListener('click', showHome));
 $('brand').addEventListener('click', showHome);
 
-const VERSION = 'v2.2（2026-08-27）';
+const VERSION = 'v2.3（2026-08-27）';
 buildCards();
 $('foot').textContent = `光田 PDF 工具站 ${VERSION} — 所有處理都在你的瀏覽器完成，檔案不會上傳到任何伺服器，關掉分頁就沒了`;
 
@@ -1055,6 +1140,167 @@ $('foot').textContent = `光田 PDF 工具站 ${VERSION} — 所有處理都在�
     }catch(e){ alert('套用失敗：'+e.message); $('wm-info').textContent=''; }
     btn.disabled=false;
   });
+})();
+
+/* ═══════════════ 批次浮水印 ═══════════════ */
+(function(){
+  /* SOP 規格：由現行公文範例逐項量測而得
+     院徽 70% 頁寬、水平垂直置中、不旋轉、20% 淡度
+     管制章 22.7% 頁寬、右下角，距右 7pt 距下 4pt（章的 PNG 本身已是半透明） */
+  const SOP = {
+    logo:{url:'assets/ktgh-logo.png', widthPct:0.70, opacity:0.20},
+    seal:{url:'assets/ktgh-seal.png', widthPct:0.227, marginRight:7.2, marginBottom:4.3, opacity:1},
+  };
+  let files=[], rows=[], busy=false;
+  const S={sop:true, logoScope:'all', sealScope:'first', out:'each', text:'光田綜合醫院', op:15, size:48};
+  const cache={};
+
+  const fetchBytes = async url => { if(!cache[url]) cache[url]=new Uint8Array(await (await fetch(url)).arrayBuffer()); return cache[url]; };
+
+  bindDrop($('bt-drop'), $('bt-input'), add);
+  bindPanelDrop('task-batch', add);
+  function add(list){
+    const pdfs=list.filter(isPdf);
+    if(!pdfs.length) return;
+    files.push(...pdfs);
+    render();
+  }
+  function render(){
+    const box=$('bt-list'); box.innerHTML=''; rows=[];
+    files.forEach(f=>{
+      const row=document.createElement('div'); row.className='fileitem';
+      const n=document.createElement('span'); n.className='name'; n.textContent=f.name;
+      const sz=document.createElement('span'); sz.className='pg';
+      sz.textContent = f.size>1048576 ? (f.size/1048576).toFixed(1)+' MB' : Math.round(f.size/1024)+' KB';
+      const st=document.createElement('span'); st.className='status wait'; st.textContent='等待中';
+      row.append(n,sz,st); box.appendChild(row); rows.push(st);
+    });
+    $('bt-count').textContent = files.length ? `已選 ${files.length} 份檔案` : '';
+    $('bt-run').disabled = !files.length || busy;
+    $('bt-clear').disabled = !files.length || busy;
+  }
+  $('bt-clear').addEventListener('click', ()=>{ files=[]; render(); $('bt-prog').style.display='none'; });
+
+  $('bt-sop').addEventListener('change', e=>{
+    S.sop=e.target.checked;
+    $('bt-sop-opts').style.display = S.sop?'grid':'none';
+    $('bt-sop-hint').style.display = S.sop?'block':'none';
+    $('bt-custom').style.display = S.sop?'none':'block';
+  });
+  bindSeg($('bt-logo-scope'), v=>S.logoScope=v);
+  bindSeg($('bt-seal-scope'), v=>S.sealScope=v);
+  bindSeg($('bt-out'), v=>S.out=v);
+  $('bt-text').addEventListener('input', e=>S.text=e.target.value);
+  $('bt-op').addEventListener('input', e=>{ S.op=+e.target.value; $('bt-op-v').textContent=e.target.value+'%'; });
+  $('bt-size').addEventListener('input', e=>{ S.size=+e.target.value; $('bt-size-v').textContent=e.target.value+' pt'; });
+
+  const scopeSet=(scope,n)=> scope==='none'?[] : scope==='first'?[0] : Array.from({length:n},(_,i)=>i);
+
+  /* 對一份 PDF 蓋章，回傳處理後的位元組 */
+  async function stamp(bytes){
+    const doc = await PDFDocument.load(bytes, {ignoreEncryption:true});
+    const pages = doc.getPages();
+    if(S.sop){
+      const logoImg = S.logoScope!=='none' ? await doc.embedPng(await fetchBytes(SOP.logo.url)) : null;
+      const sealImg = S.sealScope!=='none' ? await doc.embedPng(await fetchBytes(SOP.seal.url)) : null;
+      for(const i of scopeSet(S.logoScope, pages.length)){
+        const p=pages[i]; if(!p) continue;
+        const {width:w, height:h}=p.getSize();
+        const iw=w*SOP.logo.widthPct, ih=iw*logoImg.height/logoImg.width;
+        p.drawImage(logoImg, {x:(w-iw)/2, y:(h-ih)/2, width:iw, height:ih, opacity:SOP.logo.opacity});
+      }
+      for(const i of scopeSet(S.sealScope, pages.length)){
+        const p=pages[i]; if(!p) continue;
+        const {width:w}=p.getSize();
+        const iw=w*SOP.seal.widthPct, ih=iw*sealImg.height/sealImg.width;
+        p.drawImage(sealImg, {x:w-iw-SOP.seal.marginRight, y:SOP.seal.marginBottom, width:iw, height:ih, opacity:SOP.seal.opacity});
+      }
+    }else{
+      const txt=S.text.trim();
+      if(txt){
+        const sp=await textSprite(txt, S.size, '#888888');
+        const img=await doc.embedPng(sp.bytes);
+        const rad=45*Math.PI/180, cos=Math.cos(rad), sin=Math.sin(rad);
+        for(const p of pages){
+          const {width:w, height:h}=p.getSize();
+          p.drawImage(img, {x:w/2-(sp.wPt*cos-sp.hPt*sin)/2, y:h/2-(sp.wPt*sin+sp.hPt*cos)/2,
+            width:sp.wPt, height:sp.hPt, opacity:S.op/100, rotate:degrees(45)});
+        }
+      }
+    }
+    return doc.save();
+  }
+
+  $('bt-run').addEventListener('click', async ()=>{
+    if(busy || !files.length) return;
+    busy=true; $('bt-run').disabled=true; $('bt-clear').disabled=true;
+    $('bt-prog').style.display='block';
+    const setBar=p=>$('bt-bar').style.width=Math.round(p*100)+'%';
+    setBar(0);
+    try{
+      if(S.out==='merge'){
+        // 先把全部合併成一份，再整份蓋章
+        rows.forEach(r=>{ r.className='status busy'; r.textContent='合併中…'; });
+        const out=await PDFDocument.create();
+        for(let i=0;i<files.length;i++){
+          const src=await PDFDocument.load(new Uint8Array(await files[i].arrayBuffer()), {ignoreEncryption:true});
+          const cps=await out.copyPages(src, src.getPageIndices());
+          cps.forEach(p=>out.addPage(p));
+          rows[i].className='status done'; rows[i].textContent='已併入';
+          setBar((i+1)/(files.length+1));
+        }
+        const stamped=await stamp(await out.save());
+        setBar(1);
+        downloadBytes(stamped, files[0].name.replace(/\.pdf$/i,'')+'_等'+files.length+'份_合併蓋章.pdf');
+      }else{
+        const zip=[];
+        for(let i=0;i<files.length;i++){
+          const st=rows[i];
+          st.className='status busy'; st.textContent='處理中…';
+          try{
+            const bytes=await stamp(new Uint8Array(await files[i].arrayBuffer()));
+            zip.push({name:files[i].name.replace(/\.pdf$/i,'')+'_已蓋章.pdf', bytes});
+            st.className='status done'; st.textContent='完成';
+          }catch(e){
+            st.className='status fail'; st.textContent='失敗：'+e.message;
+          }
+          setBar((i+1)/files.length);
+          await new Promise(r=>setTimeout(r));
+        }
+        if(zip.length===1) downloadBytes(zip[0].bytes, zip[0].name);
+        else if(zip.length) downloadBlob(makeZip(zip), `SOP蓋章_${zip.length}份.zip`);
+      }
+    }catch(e){ alert('批次處理失敗：'+e.message); }
+    busy=false; $('bt-run').disabled=false; $('bt-clear').disabled=false;
+  });
+
+  /* ── 精簡 ZIP 打包（store 模式，PDF 本身已壓縮不需再壓）── */
+  const CRC=(()=>{ const t=new Uint32Array(256);
+    for(let n=0;n<256;n++){ let c=n; for(let k=0;k<8;k++) c=c&1?0xEDB88320^(c>>>1):c>>>1; t[n]=c>>>0; }
+    return b=>{ let c=0xFFFFFFFF; for(let i=0;i<b.length;i++) c=t[(c^b[i])&0xFF]^(c>>>8); return (c^0xFFFFFFFF)>>>0; };
+  })();
+  function makeZip(entries){
+    const enc=new TextEncoder(), parts=[], central=[];
+    let offset=0;
+    const u16=v=>[v&255,(v>>8)&255];
+    const u32=v=>[v&255,(v>>8)&255,(v>>16)&255,(v>>24)&255];
+    for(const e of entries){
+      const nameBytes=enc.encode(e.name), crc=CRC(e.bytes), len=e.bytes.length;
+      // 本地檔頭：flag bit 11 標示檔名為 UTF-8，中文檔名才不會亂碼
+      const local=new Uint8Array([...u32(0x04034b50),...u16(20),...u16(0x800),...u16(0),
+        ...u16(0),...u16(0),...u32(crc),...u32(len),...u32(len),
+        ...u16(nameBytes.length),...u16(0),...nameBytes]);
+      parts.push(local, e.bytes);
+      central.push(new Uint8Array([...u32(0x02014b50),...u16(20),...u16(20),...u16(0x800),...u16(0),
+        ...u16(0),...u16(0),...u32(crc),...u32(len),...u32(len),
+        ...u16(nameBytes.length),...u16(0),...u16(0),...u16(0),...u16(0),...u32(0),...u32(offset),...nameBytes]));
+      offset += local.length + len;
+    }
+    const cdSize=central.reduce((s,c)=>s+c.length,0);
+    const end=new Uint8Array([...u32(0x06054b50),...u16(0),...u16(0),
+      ...u16(entries.length),...u16(entries.length),...u32(cdSize),...u32(offset),...u16(0)]);
+    return new Blob([...parts,...central,end], {type:'application/zip'});
+  }
 })();
 
 /* ═══════════════ 拆分 ═══════════════ */
