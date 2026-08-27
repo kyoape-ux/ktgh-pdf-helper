@@ -352,7 +352,7 @@ footer{
     <div class="subcard" id="bt-preset" style="margin-top:16px">
       <h3><input type="checkbox" id="bt-sop" checked>SOP 預設（光田院徽 ＋ 文件管制專用章）</h3>
       <p class="hint" id="bt-sop-hint">
-        比照現行公文規格：院徽以 70% 頁寬置中、20% 淡度蓋滿每一頁；文件管制專用章蓋在右下角。
+        比照現行 SOP 公文規格：院徽以 70% 頁寬置中、20% 淡度，文件管制專用章蓋右下角，兩者每一頁都蓋。橫式頁面會自動按比例縮放。
       </p>
       <div class="row2" id="bt-sop-opts" style="margin-top:12px">
         <div class="field" style="margin-bottom:0">
@@ -366,8 +366,8 @@ footer{
         <div class="field" style="margin-bottom:0">
           <label>管制章套用範圍</label>
           <div class="seg" id="bt-seal-scope">
-            <button data-v="first" class="active">只有第一頁</button>
-            <button data-v="all">每一頁</button>
+            <button data-v="all" class="active">每一頁</button>
+            <button data-v="first">只有第一頁</button>
             <button data-v="none">不蓋</button>
           </div>
         </div>
@@ -754,7 +754,7 @@ function showHome(){
 document.querySelectorAll('.back').forEach(b=>b.addEventListener('click', showHome));
 $('brand').addEventListener('click', showHome);
 
-const VERSION = 'v2.3（2026-08-27）';
+const VERSION = 'v2.4（2026-08-27）';
 buildCards();
 $('foot').textContent = `光田 PDF 工具站 ${VERSION} — 所有處理都在你的瀏覽器完成，檔案不會上傳到任何伺服器，關掉分頁就沒了`;
 
@@ -1144,15 +1144,16 @@ $('foot').textContent = `光田 PDF 工具站 ${VERSION} — 所有處理都在�
 
 /* ═══════════════ 批次浮水印 ═══════════════ */
 (function(){
-  /* SOP 規格：由現行公文範例逐項量測而得
-     院徽 70% 頁寬、水平垂直置中、不旋轉、20% 淡度
-     管制章 22.7% 頁寬、右下角，距右 7pt 距下 4pt（章的 PNG 本身已是半透明） */
+  /* SOP 規格：逐頁量測現行 18 頁 SOP 公文而得
+     院徽 70% 頁寬、水平垂直置中、不旋轉、20% 淡度，每頁皆有
+     管制章 22.7% 頁寬、右下角，每頁皆有
+     邊距按「頁寬」等比縮放 —— 橫式頁面實測邊距同步放大，固定點數會對不上 */
   const SOP = {
     logo:{url:'assets/ktgh-logo.png', widthPct:0.70, opacity:0.20},
-    seal:{url:'assets/ktgh-seal.png', widthPct:0.227, marginRight:7.2, marginBottom:4.3, opacity:1},
+    seal:{url:'assets/ktgh-seal.png', widthPct:0.227, marginRightPct:0.0122, marginBottomPct:0.0072, opacity:1},
   };
   let files=[], rows=[], busy=false;
-  const S={sop:true, logoScope:'all', sealScope:'first', out:'each', text:'光田綜合醫院', op:15, size:48};
+  const S={sop:true, logoScope:'all', sealScope:'all', out:'each', text:'光田綜合醫院', op:15, size:48};
   const cache={};
 
   const fetchBytes = async url => { if(!cache[url]) cache[url]=new Uint8Array(await (await fetch(url)).arrayBuffer()); return cache[url]; };
@@ -1213,7 +1214,8 @@ $('foot').textContent = `光田 PDF 工具站 ${VERSION} — 所有處理都在�
         const p=pages[i]; if(!p) continue;
         const {width:w}=p.getSize();
         const iw=w*SOP.seal.widthPct, ih=iw*sealImg.height/sealImg.width;
-        p.drawImage(sealImg, {x:w-iw-SOP.seal.marginRight, y:SOP.seal.marginBottom, width:iw, height:ih, opacity:SOP.seal.opacity});
+        p.drawImage(sealImg, {x:w-iw-w*SOP.seal.marginRightPct, y:w*SOP.seal.marginBottomPct,
+          width:iw, height:ih, opacity:SOP.seal.opacity});
       }
     }else{
       const txt=S.text.trim();
